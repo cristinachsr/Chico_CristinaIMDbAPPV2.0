@@ -228,18 +228,21 @@ public class PantallaPrincipal extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             String userId = user.getUid();
-                            String name = "Usuario"; // Nombre por defecto
-                            String photoUrl = null; // No usar imagen predeterminada
+                            String name = "Usuario";
+                            String image = null;
 
                             // 🔥 GUARDAR EN FIRESTORE
-                            saveUserToFirestore(userId, name, email, photoUrl);
+                            saveUserToFirestore(userId, name, email, image);
 
                             // 🔥 GUARDAR EN SQLite
                             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
-                            favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
+                            favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, image);
+
+                            // 🔥 VINCULAR AL USUARIO CON SU LISTA DE FAVORITOS
+                            favoritesManager.syncFavorites(userId);
 
                             // 🔥 GUARDAR EN SharedPreferences
-                            saveUserToSharedPreferences(userId, name, email, photoUrl, "email");
+                            saveUserToSharedPreferences(userId, name, email, image, "email");
 
                             // 🔥 REDIRECCIONAR AL MAIN
                             Toast.makeText(this, "Registro exitoso. Bienvenido/a.", Toast.LENGTH_SHORT).show();
@@ -250,8 +253,6 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
-
-
 
 
 
@@ -286,16 +287,19 @@ public class PantallaPrincipal extends AppCompatActivity {
                                 userRef.get().addOnSuccessListener(documentSnapshot -> {
                                     if (documentSnapshot.exists()) {
                                         String name = documentSnapshot.getString("name");
-                                        String photoUrl = documentSnapshot.getString("photoUrl");
+                                        String image = documentSnapshot.getString("image");
 
                                         if (name == null) name = "Usuario";
-                                        if (photoUrl == null) photoUrl = null; // No usar imagen predeterminada
+                                        if (image == null) image = "android.resource://" + getPackageName() + "/drawable/logoandroid";
 
                                         // 🔥 GUARDAR EN SQLite
-                                        favoritesManager.addOrUpdateUser(userId, name, emailFromFirebase, null, null, null, null, photoUrl);
+                                        favoritesManager.addOrUpdateUser(userId, name, emailFromFirebase, null, null, null, null, image);
+
+                                        // 🔥 VINCULAR FAVORITOS
+                                        favoritesManager.syncFavorites(userId);
 
                                         // 🔥 GUARDAR EN SharedPreferences
-                                        saveUserToSharedPreferences(userId, name, emailFromFirebase, photoUrl, "email");
+                                        saveUserToSharedPreferences(userId, name, emailFromFirebase, image, "email");
 
                                         Toast.makeText(this, "Inicio de sesión exitoso.", Toast.LENGTH_SHORT).show();
                                         goToMainActivityWithEmail(userId, name, emailFromFirebase);
@@ -305,6 +309,12 @@ public class PantallaPrincipal extends AppCompatActivity {
                                     }
                                 });
                             } else {
+                                // 🔥 Si el usuario ya está en SQLite, sincronizar sus favoritos
+                                favoritesManager.syncFavorites(userId);
+
+                                // 🔥 Si el usuario ya está en SQLite, guardar en SharedPreferences
+                                saveUserToSharedPreferences(userId, "Usuario", emailFromFirebase, null, "email");
+
                                 goToMainActivityWithEmail(userId, "Usuario", emailFromFirebase);
                             }
                         }
@@ -342,15 +352,13 @@ public class PantallaPrincipal extends AppCompatActivity {
             }
         }
     }
-
-
-    private void saveUserToFirestore(String userId, String name, String email, String photoUrl) {
+    private void saveUserToFirestore(String userId, String name, String email, String image) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> userData = new HashMap<>();
         userData.put("userId", userId);
         userData.put("name", name);
         userData.put("email", email);
-        userData.put("photoUrl", photoUrl);
+        userData.put("image", image); // Asegurar que el nombre de la columna coincide
 
         db.collection("users").document(userId)
                 .set(userData)
@@ -358,24 +366,35 @@ public class PantallaPrincipal extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e("Firestore", "Error al registrar usuario en Firestore", e));
     }
 
-    private void saveUserToSharedPreferences(String userId, String name, String email, String photoUrl, String authMethod) {
+    private void saveUserToSharedPreferences(String userId, String name, String email, String image, String authMethod) {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("userId", userId);
         editor.putString("name", name);
         editor.putString("email", email);
-        editor.putString("photoUrl", photoUrl);
-        editor.putString("authMethod", authMethod); // Método de autenticación
+        editor.putString("image", image); // Cambiar de photoUrl a image
+        editor.putString("authMethod", authMethod);
         editor.apply();
     }
+
     private void goToMainActivityWithEmail(String userId, String name, String email) {
+        Log.d("Navigation", "Redirigiendo a MainActivity con: " + userId + ", " + name + ", " + email);
+
+        if (userId == null || email == null) {
+            Log.e("Navigation", "❌ Error: userId o email son nulos. No se puede redirigir.");
+            Toast.makeText(this, "Error al obtener datos del usuario.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("userId", userId);
-        intent.putExtra("name", name != null ? name : "Usuario"); // Predeterminado si es null
+        intent.putExtra("name", name != null ? name : "Usuario");
         intent.putExtra("email", email);
         startActivity(intent);
         finish();
     }
+
+
 
 
 

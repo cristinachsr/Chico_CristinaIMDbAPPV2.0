@@ -52,16 +52,26 @@ public class MainActivity extends AppCompatActivity {
 
         //Ciclo de vida
         ProcessLifecycleOwner.get().getLifecycle().addObserver(new AppLifecycleObserver(this));
-
-
         Log.d("MainActivity", "Aplicación iniciada. Registrando login...");
+
+
+        // Obtener datos del Intent (si vienen desde login)
+        Intent intent = getIntent();
+        String userIdFromIntent = intent.getStringExtra("userId");
+        String nameFromIntent = intent.getStringExtra("name");
+        String emailFromIntent = intent.getStringExtra("email");
+
+        // Obtener datos desde SharedPreferences
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", userIdFromIntent);
+        String name = sharedPreferences.getString("name", nameFromIntent);
+        String email = sharedPreferences.getString("email", emailFromIntent);
+        String photoUrl = sharedPreferences.getString("photoUrl", null);
+        String authMethod = sharedPreferences.getString("authMethod", null); // 🔥 Obtener el método de autenticación
 
         // Obtener la fecha y hora actuales
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
 
-        // Obtener el userId desde SharedPreferences
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        String userId = sharedPreferences.getString("userId", null);
 
         if (userId != null) {
             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
@@ -110,15 +120,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Inicializar Firebase y SharedPreferences
         //FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-
-        // 🔥 Obtener datos del usuario desde SharedPreferences
-        //SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        //String userId = sharedPreferences.getString("userId", null);
-        String name = sharedPreferences.getString("name", "Usuario");
-        String email = sharedPreferences.getString("email", "Correo no disponible");
-        String photoUrl = sharedPreferences.getString("photoUrl", null);
-        String authMethod = sharedPreferences.getString("authMethod", null); // 🔥 Obtener el método de autenticación
 
 
         // 🔥 Si hay userId en SharedPreferences, usarlo en vez de FirebaseAuth

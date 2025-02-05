@@ -179,7 +179,7 @@ public class FavoritesManager {
                     logoutTime,
                     address != null ? address : "Sin Dirección",
                     phone != null ? phone : "Sin Teléfono",
-                    image != null ? image : null); // No usar imagen predeterminada
+                    image != null ? image : null);
 
             Log.d("FavoritesManager", "✅ Usuario insertado en SQLite: " + userId);
         }
@@ -188,6 +188,7 @@ public class FavoritesManager {
             cursor.close();
         }
     }
+
 
 
     @SuppressLint("Range")
