@@ -72,12 +72,12 @@ public class PantallaPrincipal extends AppCompatActivity {
         setContentView(R.layout.pantallaprincipal);
 
 
-        // 🔥 Verificar primero en la base de datos si el usuario existe
+        //  Verificar primero en la base de datos si el usuario existe
         FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
 
         String userId = sharedPreferences.getString("userId", null);
-        String authMethod = sharedPreferences.getString("authMethod", null); // 🔥 Obtener el método de autenticación
+        String authMethod = sharedPreferences.getString("authMethod", null); //  Obtener el método de autenticación
 
         if (userId != null) {
             // Verificar si el usuario existe en la base de datos local
@@ -102,14 +102,14 @@ public class PantallaPrincipal extends AppCompatActivity {
                         favoritesManager.addOrUpdateUser(userId, name, emailFromDB, null, null, null, null, photoUrl);
 
                         // Redirigir al MainActivity
-                        Log.d("Sesion", "🟢 Usuario sincronizado con éxito. Redirigiendo...");
+                        Log.d("Sesion", " Usuario sincronizado con éxito. Redirigiendo...");
                         goToMainActivity();
                     } else {
-                        Log.e("Sesion", "⚠ Usuario autenticado pero no encontrado en Firestore.");
+                        Log.e("Sesion", "⚠Usuario autenticado pero no encontrado en Firestore.");
                     }
                 }).addOnFailureListener(e -> Log.e("Firestore", "Error al obtener datos del usuario.", e));
             } else {
-                Log.d("Sesion", "✅ Usuario encontrado en la base local. Redirigiendo...");
+                Log.d("Sesion", " Usuario encontrado en la base local. Redirigiendo...");
                 goToMainActivity();
             }
         }
@@ -174,14 +174,14 @@ public class PantallaPrincipal extends AppCompatActivity {
                         List<String> signInMethods = task.getResult().getSignInMethods();
                         if (signInMethods != null && !signInMethods.isEmpty()) {
                             if (signInMethods.contains(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD)) {
-                                // 🔹 El correo ya está registrado con Email/Password, permitir registro
+                                //  El correo ya está registrado con Email/Password, permitir registro
                                 onEmailAvailable.run();
                             } else {
-                                // 🔹 El correo ya está registrado con otro método (Google/Facebook)
+                                // El correo ya está registrado con otro método (Google/Facebook)
                                 onEmailUsedWithOtherMethod.run();
                             }
                         } else {
-                            // 🔹 El correo no está registrado en Firebase
+                            //  El correo no está registrado en Firebase
                             onEmailAvailable.run();
                         }
                     } else {
@@ -231,20 +231,20 @@ public class PantallaPrincipal extends AppCompatActivity {
                             String name = "Usuario";
                             String image = null;
 
-                            // 🔥 GUARDAR EN FIRESTORE
+                            //  GUARDAR EN FIRESTORE
                             saveUserToFirestore(userId, name, email, image);
 
-                            // 🔥 GUARDAR EN SQLite
+                            //  GUARDAR EN SQLite
                             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
                             favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, image);
 
-                            // 🔥 VINCULAR AL USUARIO CON SU LISTA DE FAVORITOS
+                            //  VINCULAR AL USUARIO CON SU LISTA DE FAVORITOS
                             favoritesManager.syncFavorites(userId);
 
-                            // 🔥 GUARDAR EN SharedPreferences
+                            //  GUARDAR EN SharedPreferences
                             saveUserToSharedPreferences(userId, name, email, image, "email");
 
-                            // 🔥 REDIRECCIONAR AL MAIN
+                            //  REDIRECCIONAR AL MAIN
                             Toast.makeText(this, "Registro exitoso. Bienvenido/a.", Toast.LENGTH_SHORT).show();
                             goToMainActivityWithEmail(userId, name, email);
                         }
@@ -279,7 +279,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
 
                             if (!favoritesManager.isUserExists(userId)) {
-                                Log.e("Sync", "⚠ Usuario no encontrado en SQLite. Cargando desde Firestore...");
+                                Log.e("Sync", " Usuario no encontrado en SQLite. Cargando desde Firestore...");
 
                                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                                 DocumentReference userRef = db.collection("users").document(userId);
@@ -292,13 +292,13 @@ public class PantallaPrincipal extends AppCompatActivity {
                                         if (name == null) name = "Usuario";
                                         if (image == null) image = "android.resource://" + getPackageName() + "/drawable/logoandroid";
 
-                                        // 🔥 GUARDAR EN SQLite
+                                        //  GUARDAR EN SQLite
                                         favoritesManager.addOrUpdateUser(userId, name, emailFromFirebase, null, null, null, null, image);
 
-                                        // 🔥 VINCULAR FAVORITOS
+                                        // VINCULAR FAVORITOS
                                         favoritesManager.syncFavorites(userId);
 
-                                        // 🔥 GUARDAR EN SharedPreferences
+                                        //  GUARDAR EN SharedPreferences
                                         saveUserToSharedPreferences(userId, name, emailFromFirebase, image, "email");
 
                                         Toast.makeText(this, "Inicio de sesión exitoso.", Toast.LENGTH_SHORT).show();
@@ -309,10 +309,10 @@ public class PantallaPrincipal extends AppCompatActivity {
                                     }
                                 });
                             } else {
-                                // 🔥 Si el usuario ya está en SQLite, sincronizar sus favoritos
+                                //  Si el usuario ya está en SQLite, sincronizar sus favoritos
                                 favoritesManager.syncFavorites(userId);
 
-                                // 🔥 Si el usuario ya está en SQLite, guardar en SharedPreferences
+                                //  Si el usuario ya está en SQLite, guardar en SharedPreferences
                                 saveUserToSharedPreferences(userId, "Usuario", emailFromFirebase, null, "email");
 
                                 goToMainActivityWithEmail(userId, "Usuario", emailFromFirebase);
@@ -381,7 +381,7 @@ public class PantallaPrincipal extends AppCompatActivity {
         Log.d("Navigation", "Redirigiendo a MainActivity con: " + userId + ", " + name + ", " + email);
 
         if (userId == null || email == null) {
-            Log.e("Navigation", "❌ Error: userId o email son nulos. No se puede redirigir.");
+            Log.e("Navigation", " Error: userId o email son nulos. No se puede redirigir.");
             Toast.makeText(this, "Error al obtener datos del usuario.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -445,13 +445,13 @@ public class PantallaPrincipal extends AppCompatActivity {
 
                                         userRef.get().addOnSuccessListener(documentSnapshot -> {
                                             if (!documentSnapshot.exists()) {
-                                                // 🔥 Usuario NO registrado en Firestore, guardarlo
+                                                //  Usuario NO registrado en Firestore, guardarlo
                                                 Map<String, Object> userData = new HashMap<>();
                                                 userData.put("userId", userId);
                                                 userData.put("name", name);
                                                 userData.put("email", email);
                                                 userData.put("photoUrl", photoUrl);
-                                                userData.put("authMethod", "facebook"); // 🔥 Guardar método de autenticación
+                                                userData.put("authMethod", "facebook"); //  Guardar método de autenticación
 
                                                 userRef.set(userData)
                                                         .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario registrado en Firestore"))
@@ -467,15 +467,15 @@ public class PantallaPrincipal extends AppCompatActivity {
                                             editor.putString("name", name);
                                             editor.putString("email", email);
                                             editor.putString("photoUrl", photoUrl);
-                                            editor.putString("authMethod", "facebook"); // 🔥 Guardar método de autenticación
+                                            editor.putString("authMethod", "facebook"); //  Guardar método de autenticación
                                             editor.apply();
 
-                                            // 🔥 Sincronizar favoritos
+                                            //  Sincronizar favoritos
                                             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
                                             favoritesManager.syncFavorites(userId);
 
 
-                                            // **🔥 Guardar en la base de datos local usuario(SQLite)**
+                                            // ** Guardar en la base de datos local usuario(SQLite)**
                                             favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
 
                                             // Escuchar cambios en tiempo real
@@ -602,7 +602,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     editor.putString("name", name);
                     editor.putString("email", email);
                     editor.putString("photoUrl", photoUrl);
-                    editor.putString("authMethod", "google"); // 🔥 Registrar el método de autenticación
+                    editor.putString("authMethod", "google"); //  Registrar el método de autenticación
                     editor.apply();
 
                     // Sincronizar favoritos y usuario

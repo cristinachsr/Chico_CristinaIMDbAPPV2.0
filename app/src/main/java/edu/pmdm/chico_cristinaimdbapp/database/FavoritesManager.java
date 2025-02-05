@@ -170,7 +170,7 @@ public class FavoritesManager {
                     phone != null ? phone : cursor.getString(cursor.getColumnIndex("phone")),
                     image != null ? image : cursor.getString(cursor.getColumnIndex("image")));
 
-            Log.d("FavoritesManager", "✅ Usuario actualizado en SQLite: " + userId);
+            Log.d("FavoritesManager", " Usuario actualizado en SQLite: " + userId);
         } else {
             dbHelper.addUser(userId,
                     name != null ? name : "Usuario",
@@ -181,7 +181,7 @@ public class FavoritesManager {
                     phone != null ? phone : "Sin Teléfono",
                     image != null ? image : null);
 
-            Log.d("FavoritesManager", "✅ Usuario insertado en SQLite: " + userId);
+            Log.d("FavoritesManager", " Usuario insertado en SQLite: " + userId);
         }
 
         if (cursor != null) {

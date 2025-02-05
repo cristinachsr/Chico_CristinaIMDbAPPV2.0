@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         String name = sharedPreferences.getString("name", nameFromIntent);
         String email = sharedPreferences.getString("email", emailFromIntent);
         String photoUrl = sharedPreferences.getString("photoUrl", null);
-        String authMethod = sharedPreferences.getString("authMethod", null); // 🔥 Obtener el método de autenticación
+        String authMethod = sharedPreferences.getString("authMethod", null); // Obtener el método de autenticación
 
         // Obtener la fecha y hora actuales
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
@@ -122,11 +122,11 @@ public class MainActivity extends AppCompatActivity {
         //FirebaseFirestore db = FirebaseFirestore.getInstance();
 
 
-        // 🔥 Si hay userId en SharedPreferences, usarlo en vez de FirebaseAuth
+        //  Si hay userId en SharedPreferences, usarlo en vez de FirebaseAuth
         if (userId != null) {
             Log.d("MainActivity", "Usuario detectado en SharedPreferences: " + userId);
 
-            // 🔥 Si el usuario se autenticó con Facebook, no usar FirebaseUser
+            //  Si el usuario se autenticó con Facebook, no usar FirebaseUser
             if ("facebook".equals(authMethod)) {
                 Log.d("MainActivity", "Iniciando sesión con Facebook");
             } else if ("google".equals(authMethod)) {
@@ -138,13 +138,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // 🔥 Sincronizar favoritos
+            //  Sincronizar favoritos
             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
             favoritesManager.syncFavorites(userId);
             favoritesManager.listenForFavoriteChanges(userId);
             favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
 
-            // 🔥 Actualizar UI
+            //  Actualizar UI
             updateNavigationDrawer(name, email, photoUrl);
         } else {
             Log.w("MainActivity", "No se encontró un usuario registrado. Redirigiendo a pantalla de login.");
@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        // 🔥 Actualizar el UI con los datos del usuario autenticado
+        //  Actualizar el UI con los datos del usuario autenticado
         updateNavigationDrawer(name, email, photoUrl);
 
         // Configurar el botón de cierre de sesión
@@ -174,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                 String name = documentSnapshot.getString("name");
                 String email = documentSnapshot.getString("email");
                 String photoUrl = documentSnapshot.getString("photoUrl");
-                String authMethod = documentSnapshot.getString("authMethod"); // 🔥 Obtener método de autenticación
+                String authMethod = documentSnapshot.getString("authMethod"); //  Obtener método de autenticación
 
                 // Guardar en SharedPreferences
                 SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 editor.putString("authMethod", authMethod);
                 editor.apply();
 
-                // 🔥 Evitar que Google SignIn se ejecute si el usuario usó Facebook
+                //  Evitar que Google SignIn se ejecute si el usuario usó Facebook
                 if (!"facebook".equals(authMethod)) {
                     GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
                     if (account != null) {
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void signOut() {
-        Log.d("MainActivity", "🛑 Usuario cerrando sesión manualmente. Registrando logout...");
+        Log.d("MainActivity", " Usuario cerrando sesión manualmente. Registrando logout...");
 
         // Obtener la fecha y hora actuales para registrar el logout
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
@@ -264,37 +264,37 @@ public class MainActivity extends AppCompatActivity {
             // Registrar logout en la base de datos local
             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
             favoritesManager.addOrUpdateUser(userId, null, null, null, currentTime, null, null, null);
-            Log.d("MainActivity", "✅ Logout registrado en la base de datos local.");
+            Log.d("MainActivity", " Logout registrado en la base de datos local.");
 
             // Registrar logout en Firestore
             FirestoreHelper firestoreHelper = new FirestoreHelper();
             firestoreHelper.addActivityLog(userId, null, currentTime); // Añadir evento al activity_log en Firestore
-            Log.d("MainActivity", "✅ Logout registrado en Firestore.");
+            Log.d("MainActivity", " Logout registrado en Firestore.");
         } else {
-            Log.e("MainActivity", "⚠ No se pudo registrar logout porque el userId es nulo.");
+            Log.e("MainActivity", " No se pudo registrar logout porque el userId es nulo.");
         }
 
         // Cerrar sesión dependiendo del método de autenticación
         if ("google".equals(authMethod)) {
             // Cerrar sesión en Google
             GoogleSignInClient mGoogleSignInClient = GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN);
-            mGoogleSignInClient.signOut().addOnCompleteListener(task -> Log.d("MainActivity", "✅ Sesión de Google cerrada."));
+            mGoogleSignInClient.signOut().addOnCompleteListener(task -> Log.d("MainActivity", " Sesión de Google cerrada."));
         } else if ("facebook".equals(authMethod)) {
             // Cerrar sesión en Facebook
             LoginManager.getInstance().logOut();
-            Log.d("MainActivity", "✅ Sesión de Facebook cerrada.");
+            Log.d("MainActivity", " Sesión de Facebook cerrada.");
         }
 
         // Cerrar sesión en Firebase
         FirebaseAuth.getInstance().signOut();
-        Log.d("MainActivity", "✅ Sesión de Firebase cerrada.");
+        Log.d("MainActivity", " Sesión de Firebase cerrada.");
 
         // Limpiar SharedPreferences para eliminar los datos del usuario
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();
 
-        Log.d("MainActivity", "✅ SharedPreferences limpiadas, usuario completamente desconectado.");
+        Log.d("MainActivity", " SharedPreferences limpiadas, usuario completamente desconectado.");
 
         // Redirigir a la pantalla principal tras cerrar sesión
         Intent intent = new Intent(MainActivity.this, PantallaPrincipal.class);

@@ -22,7 +22,7 @@ public class AppLifecycleObserver implements LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     public void onAppForegrounded() {
-        Log.d("AppLifecycle", "🔵 Aplicación abierta. Registrando login...");
+        Log.d("AppLifecycle", " Aplicación abierta. Registrando login...");
 
         SharedPreferences sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
@@ -40,7 +40,7 @@ public class AppLifecycleObserver implements LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     public void onAppBackgrounded() {
-        Log.d("AppLifecycle", "🛑 Aplicación en segundo plano. Registrando logout...");
+        Log.d("AppLifecycle", " Aplicación en segundo plano. Registrando logout...");
 
         SharedPreferences sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
