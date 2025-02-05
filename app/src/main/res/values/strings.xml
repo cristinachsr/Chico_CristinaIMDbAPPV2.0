@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Chico_CristinaIMDbAPPV2.0</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Top 10</string>
+    <string name="menu_gallery">Favoritas</string>
+    <string name="menu_slideshow">Buscar Películas</string>
+    <string name="app_logo_desc" />
+    <string name="facebook_app_id">28005355892441262</string>
+    <string name="facebook_client_token">d2ee670bc31924d6b2f08975826b0ca1</string>
+
+</resources>

@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "864931902992",
+    "project_id": "chicocristinaimdbapp",
+    "storage_bucket": "chicocristinaimdbapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:864931902992:android:7baacfc68ccbb626cb3c95",
+        "android_client_info": {
+          "package_name": "edu.pmdm.chico_cristinaimdbapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "864931902992-tbqj6nrp2sosi08oq6dt8cp9d9oft103.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "edu.pmdm.chico_cristinaimdbapp",
+            "certificate_hash": "9b9520e80159316d50433b873e78fa7f8af57ef6"
+          }
+        },
+        {
+          "client_id": "864931902992-vs4cq08cci728a8kteap34la1mqnva93.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "edu.pmdm.chico_cristinaimdbapp",
+            "certificate_hash": "fef1450d765df2cf93288011f1fa298bf7050cb7"
+          }
+        },
+        {
+          "client_id": "864931902992-gh25skjq24sts3bp9k67j4ismiu7i90a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTh3vHC0oD9VpW82IZu9HMoMiYv-7QxD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "864931902992-gh25skjq24sts3bp9k67j4ismiu7i90a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
