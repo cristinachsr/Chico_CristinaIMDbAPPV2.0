@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ProcessLifecycleOwner;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -36,7 +37,6 @@ import edu.pmdm.chico_cristinaimdbapp.database.FavoritesManager;
 import edu.pmdm.chico_cristinaimdbapp.databinding.ActivityMainBinding;
 import edu.pmdm.chico_cristinaimdbapp.sync.FirestoreHelper;
 import edu.pmdm.chico_cristinaimdbapp.utils.AppLifecycleObserver;
-import androidx.lifecycle.ProcessLifecycleOwner;
 
 
 public class MainActivity extends AppCompatActivity {
