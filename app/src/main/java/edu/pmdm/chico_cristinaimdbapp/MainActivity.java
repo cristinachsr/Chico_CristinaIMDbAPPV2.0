@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         String userIdFromIntent = intent.getStringExtra("userId");
         String nameFromIntent = intent.getStringExtra("name");
         String emailFromIntent = intent.getStringExtra("email");
+        //String imageFromIntent = intent.getStringExtra("image");
 
         // Obtener datos desde SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         String email = sharedPreferences.getString("email", emailFromIntent);
         String photoUrl = sharedPreferences.getString("photoUrl", null);
         String authMethod = sharedPreferences.getString("authMethod", null); // Obtener el método de autenticación
+        //String image = sharedPreferences.getString("image", imageFromIntent);
 
         // Obtener la fecha y hora actuales
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
@@ -145,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
             favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
 
             //  Actualizar UI
-            updateNavigationDrawer(name, email, photoUrl);
+            updateNavigationDrawer(name, email, photoUrl,authMethod);
         } else {
             Log.w("MainActivity", "No se encontró un usuario registrado. Redirigiendo a pantalla de login.");
             startActivity(new Intent(this, PantallaPrincipal.class));
@@ -154,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         //  Actualizar el UI con los datos del usuario autenticado
-        updateNavigationDrawer(name, email, photoUrl);
+        updateNavigationDrawer(name, email, photoUrl,authMethod);
 
         // Configurar el botón de cierre de sesión
         logoutButton.setOnClickListener(view -> signOut());
@@ -162,68 +164,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void checkUserInFirestore(String userId) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        DocumentReference userRef = db.collection("users").document(userId);
 
-        userRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                Log.d("Firestore", "Usuario encontrado en Firestore. Sincronizando datos...");
-
-                // Obtener datos del usuario de Firestore
-                String name = documentSnapshot.getString("name");
-                String email = documentSnapshot.getString("email");
-                String photoUrl = documentSnapshot.getString("photoUrl");
-                String authMethod = documentSnapshot.getString("authMethod"); //  Obtener método de autenticación
-
-                // Guardar en SharedPreferences
-                SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("name", name);
-                editor.putString("email", email);
-                editor.putString("photoUrl", photoUrl);
-                editor.putString("authMethod", authMethod);
-                editor.apply();
-
-                //  Evitar que Google SignIn se ejecute si el usuario usó Facebook
-                if (!"facebook".equals(authMethod)) {
-                    GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-                    if (account != null) {
-                        Log.d("Firestore", "Usuario autenticado con Google, cargando datos desde Google");
-                    }
-                }
-            } else {
-                Log.d("Firestore", "Usuario no encontrado en Firestore.");
-            }
-        }).addOnFailureListener(e -> {
-            Log.e("Firestore", "Error al verificar usuario en Firestore", e);
-        });
-    }
-    //Método para establecer la imagen de perfil.
-
-
-    private void setProfileImage(GoogleSignInAccount account, ImageView imageView) {
-        if (account.getPhotoUrl() != null) {
-            // Cargar imagen de perfil de Google si existe
-            Glide.with(this)
-                    .load(account.getPhotoUrl())
-                    .circleCrop()
-                    .into(imageView);
-        } else {
-            // Generar URL de la imagen predeterminada con iniciales del usuario
-            String email = account.getEmail();
-            String defaultImageUrl = "https://ui-avatars.com/api/?name=" +
-                    email.substring(0, email.indexOf("@")) +
-                    "&background=0D8ABC&color=fff&size=128";
-
-            // Cargar imagen generada
-            Glide.with(this)
-                    .load(defaultImageUrl)
-                    .circleCrop()
-                    .into(imageView);
-        }
-    }
-    private void updateNavigationDrawer(String name, String email, String photoUrl) {
+    private void updateNavigationDrawer(String name, String email, String photoUrl, String authMethod) {
         NavigationView navigationView = binding.navView;
         View headerView = navigationView.getHeaderView(0);
 
@@ -234,21 +176,24 @@ public class MainActivity extends AppCompatActivity {
         userName.setText(name);
         userEmail.setText(email);
 
-        if (photoUrl != null) {
-            Glide.with(this)
-                    .load(photoUrl)
-                    .circleCrop()
-                    .into(imageView);
-        } else {
-            Glide.with(this)
-                    .load("https://ui-avatars.com/api/?name=" + name + "&background=0D8ABC&color=fff")
-                    .circleCrop()
-                    .into(imageView);
+        //  Verificar si el usuario se registró con Google y no tiene imagen
+        if (photoUrl == null || photoUrl.isEmpty()) {
+            if ("google".equals(authMethod)) {
+                Log.d("NavigationDrawer", " Usuario de Google sin imagen, generando avatar.");
+                photoUrl = "https://ui-avatars.com/api/?name=" + name + "&background=0D8ABC&color=fff";
+            } else {
+                Log.d("NavigationDrawer", " Usuario sin imagen, usando logoandroid.png.");
+                photoUrl = "android.resource://" + getPackageName() + "/drawable/logoandroid";
+            }
         }
+
+        Log.d("NavigationDrawer", " Cargando imagen: " + photoUrl);
+
+        Glide.with(this)
+                .load(photoUrl)
+                .fitCenter()
+                .into(imageView);
     }
-
-
-
     private void signOut() {
         Log.d("MainActivity", " Usuario cerrando sesión manualmente. Registrando logout...");
 

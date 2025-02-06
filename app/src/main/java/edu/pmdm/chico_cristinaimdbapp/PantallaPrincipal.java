@@ -80,41 +80,71 @@ public class PantallaPrincipal extends AppCompatActivity {
         String authMethod = sharedPreferences.getString("authMethod", null); //  Obtener el método de autenticación
 
         if (userId != null) {
-            // Verificar si el usuario existe en la base de datos local
-            if (!favoritesManager.isUserExists(userId)) {
-                Log.e("Sesion", "⚠ Usuario autenticado pero no encontrado en la base local. Sincronizando...");
+            // Obtener el método de autenticación desde SharedPreferences
+            //SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+            //String authMethod = sharedPreferences.getString("authMethod", null);
 
-                // Obtener datos desde Firestore
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                DocumentReference userRef = db.collection("users").document(userId);
+            //  Si el usuario ya está en la base de datos local, redirigir directamente
+            if (favoritesManager.isUserExists(userId)) {
+                Log.d("Sesion", "✅ Usuario encontrado en la base local. Redirigiendo...");
 
-                userRef.get().addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String name = documentSnapshot.getString("name");
-                        String emailFromDB = documentSnapshot.getString("email");
-                        String photoUrl = documentSnapshot.getString("photoUrl");
-
-                        // Validar y asignar valores predeterminados si faltan datos
-                        if (name == null) name = "Usuario";
-                        if (photoUrl == null) photoUrl = "android.resource://" + getPackageName() + "/drawable/logoandroid";
-
-                        // Guardar en la base local
-                        favoritesManager.addOrUpdateUser(userId, name, emailFromDB, null, null, null, null, photoUrl);
-
-                        // Redirigir al MainActivity
-                        Log.d("Sesion", " Usuario sincronizado con éxito. Redirigiendo...");
-                        goToMainActivity();
-                    } else {
-                        Log.e("Sesion", "⚠Usuario autenticado pero no encontrado en Firestore.");
-                    }
-                }).addOnFailureListener(e -> Log.e("Firestore", "Error al obtener datos del usuario.", e));
-            } else {
-                Log.d("Sesion", " Usuario encontrado en la base local. Redirigiendo...");
-                goToMainActivity();
+                //  Redirigir según el método de autenticación
+                if ("email".equals(authMethod)) {
+                    goToMainActivityWithEmail(userId, sharedPreferences.getString("name", "Usuario"),
+                            sharedPreferences.getString("email", null));
+                } else {
+                    goToMainActivity();
+                }
+                return;
             }
+
+            //  Si el usuario no está en la base local, buscar en Firestore
+            Log.e("Sesion", " Usuario autenticado pero no encontrado en la base local. Sincronizando...");
+
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            DocumentReference userRef = db.collection("users").document(userId);
+
+            userRef.get().addOnSuccessListener(documentSnapshot -> {
+                if (documentSnapshot.exists()) {
+                    String name = documentSnapshot.getString("name");
+                    String emailFromDB = documentSnapshot.getString("email");
+                    String photoUrl = documentSnapshot.getString("image"); // Se usa "image" porque así se guarda en Firestore
+                    String authMethodFromDB = documentSnapshot.getString("authMethod"); //  Obtener método de autenticación
+
+                    // Validar valores predeterminados si faltan datos
+                    if (name == null) name = "Usuario";
+                    if (photoUrl == null || photoUrl.isEmpty()) {
+                        photoUrl = "google".equals(authMethodFromDB)
+                                ? "https://ui-avatars.com/api/?name=" + name + "&background=0D8ABC&color=fff"
+                                : "android.resource://" + getPackageName() + "/drawable/logoandroid";
+                    }
+
+                    // Guardar en la base local
+                    favoritesManager.addOrUpdateUser(userId, name, emailFromDB, null, null, null, null, photoUrl);
+
+                    //  Guardar en SharedPreferences para futuras sesiones
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("name", name);
+                    editor.putString("email", emailFromDB);
+                    editor.putString("image", photoUrl);
+                    editor.putString("authMethod", authMethodFromDB);
+                    editor.apply();
+
+                    //  Redirigir según el método de autenticación
+                    Log.d("Sesion", " Usuario sincronizado con éxito. Redirigiendo...");
+                    if ("email".equals(authMethodFromDB)) {
+                        goToMainActivityWithEmail(userId, name, emailFromDB);
+                    } else {
+                        goToMainActivity();
+                    }
+                } else {
+                    Log.e("Sesion", " Usuario autenticado pero no encontrado en Firestore.");
+                }
+            }).addOnFailureListener(e -> Log.e("Firestore", " Error al obtener datos del usuario.", e));
         }
 
-            // Configurar opciones de inicio de sesión con Google
+
+        // Configurar opciones de inicio de sesión con Google
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
@@ -137,7 +167,7 @@ public class PantallaPrincipal extends AppCompatActivity {
 
         //registro gmail
         //GMAIL
-       EditText emailField = findViewById(R.id.emailField);
+        EditText emailField = findViewById(R.id.emailField);
         EditText passwordField = findViewById(R.id.passwordField);
         Button registerButton = findViewById(R.id.registerButton);
         Button loginButton = findViewById(R.id.loginButton);
@@ -167,6 +197,8 @@ public class PantallaPrincipal extends AppCompatActivity {
 
     }
 
+
+    //registro correo y contraseña
     private void checkEmailSignInMethod(String email, Runnable onEmailAvailable, Runnable onEmailUsedWithOtherMethod) {
         mAuth.fetchSignInMethodsForEmail(email)
                 .addOnCompleteListener(task -> {
@@ -189,9 +221,6 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
-
-
-
     private void registerWithEmail(String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Por favor, completa todos los campos.", Toast.LENGTH_SHORT).show();
@@ -220,7 +249,6 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
-
     private void completeEmailRegistration(String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
@@ -229,7 +257,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                         if (user != null) {
                             String userId = user.getUid();
                             String name = "Usuario";
-                            String image = null;
+                            String image = "android.resource://" + getPackageName() + "/drawable/logoandroid"; // Imagen por defecto
 
                             //  GUARDAR EN FIRESTORE
                             saveUserToFirestore(userId, name, email, image);
@@ -253,10 +281,6 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
-
-
-
-
     private void loginWithEmail(String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Por favor, completa todos los campos.", Toast.LENGTH_SHORT).show();
@@ -323,11 +347,6 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
-
-
-
-
-
     private void handleAuthError(Exception exception) {
         if (exception != null) {
             String errorMessage = exception.getMessage();
@@ -360,13 +379,21 @@ public class PantallaPrincipal extends AppCompatActivity {
         userData.put("email", email);
         userData.put("image", image); // Asegurar que el nombre de la columna coincide
 
+        if (image != null) {
+            userData.put("image", image);
+        } else {
+            userData.put("image", "android.resource://" + getPackageName() + "/drawable/logoandroid"); // Imagen por defecto
+        }
+
         db.collection("users").document(userId)
                 .set(userData)
                 .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario registrado en Firestore"))
                 .addOnFailureListener(e -> Log.e("Firestore", "Error al registrar usuario en Firestore", e));
     }
-
     private void saveUserToSharedPreferences(String userId, String name, String email, String image, String authMethod) {
+        if (image == null || image.isEmpty()) {
+            image = "android.resource://" + getPackageName() + "/drawable/logoandroid"; // Imagen predeterminada
+        }
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("userId", userId);
@@ -376,7 +403,6 @@ public class PantallaPrincipal extends AppCompatActivity {
         editor.putString("authMethod", authMethod);
         editor.apply();
     }
-
     private void goToMainActivityWithEmail(String userId, String name, String email) {
         Log.d("Navigation", "Redirigiendo a MainActivity con: " + userId + ", " + name + ", " + email);
 
@@ -522,12 +548,6 @@ public class PantallaPrincipal extends AppCompatActivity {
             Toast.makeText(this, "Error al obtener datos de Facebook", Toast.LENGTH_SHORT).show();
         }
     }
-
-
-
-
-
-
 
 
 

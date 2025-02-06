@@ -1,5 +1,7 @@
 package edu.pmdm.chico_cristinaimdbapp.database;
 
+import static androidx.browser.customtabs.CustomTabsClient.getPackageName;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
@@ -25,8 +27,8 @@ public class FavoritesManager {
         dbHelper = new FavoritesDatabaseHelper(context);
 
         // Abrir la base de datos y habilitar claves foráneas
-        SQLiteDatabase db = dbHelper.getWritableDatabase(); // 🔹 Inicializar la variable db
-        db.execSQL("PRAGMA foreign_keys = ON;"); // 🔹 Habilitar claves foráneas
+        SQLiteDatabase db = dbHelper.getWritableDatabase(); //  Inicializar la variable db
+        db.execSQL("PRAGMA foreign_keys = ON;"); //  Habilitar claves foráneas
     }
 
 
@@ -156,6 +158,8 @@ public class FavoritesManager {
     }
 
 
+    private static final String DEFAULT_IMAGE = "android.resource://edu.pmdm.chico_cristinaimdbapp/drawable/logoandroid";
+
     @SuppressLint("Range")
     public void addOrUpdateUser(String userId, String name, String email, String loginTime, String logoutTime, String address, String phone, String image) {
         Cursor cursor = dbHelper.getUser(userId);
@@ -168,7 +172,7 @@ public class FavoritesManager {
                     logoutTime,
                     address != null ? address : cursor.getString(cursor.getColumnIndex("address")),
                     phone != null ? phone : cursor.getString(cursor.getColumnIndex("phone")),
-                    image != null ? image : cursor.getString(cursor.getColumnIndex("image")));
+                    image != null ? image : DEFAULT_IMAGE); // Imagen por defecto
 
             Log.d("FavoritesManager", " Usuario actualizado en SQLite: " + userId);
         } else {
@@ -179,7 +183,7 @@ public class FavoritesManager {
                     logoutTime,
                     address != null ? address : "Sin Dirección",
                     phone != null ? phone : "Sin Teléfono",
-                    image != null ? image : null);
+                    image != null ? image : DEFAULT_IMAGE); // Imagen por defecto
 
             Log.d("FavoritesManager", " Usuario insertado en SQLite: " + userId);
         }
@@ -188,6 +192,7 @@ public class FavoritesManager {
             cursor.close();
         }
     }
+
 
 
 
@@ -252,6 +257,7 @@ public class FavoritesManager {
     public void deleteUser(String userId) {
         dbHelper.deleteUser(userId);
     }
+
 
 
 
