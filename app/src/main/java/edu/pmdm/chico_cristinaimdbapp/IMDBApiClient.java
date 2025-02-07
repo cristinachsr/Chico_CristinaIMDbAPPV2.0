@@ -24,7 +24,7 @@ public class IMDBApiClient {
                         public Response intercept(Chain chain) throws IOException {
                             Request original = chain.request();
 
-                            // Construir la solicitud con la clave API actual
+                            // Primera solicitud con la clave actual
                             Request request = original.newBuilder()
                                     .header("x-rapidapi-host", "imdb-com.p.rapidapi.com")
                                     .header("x-rapidapi-key", RapidApiKeyManager.getApiKey())
@@ -35,13 +35,17 @@ public class IMDBApiClient {
 
                             Response response = chain.proceed(request);
 
-                            // Si hay un error 401 o 429, rota la clave API y reintenta
-                            if (response.code() == 401 || response.code() == 429) {
-                                System.out.println("[IMDBApiClient] Error " + response.code() + " detectado. Rotando clave API.");
+                            // 🔥 Verificar el código de respuesta
+                            int responseCode = response.code();
+                            System.out.println("[clave] Código de respuesta: " + responseCode);
+
+                            // 🔥 Si hay un error 401 o 429, rotar clave API y reintentar
+                            if (responseCode == 401 || responseCode == 429) {
+                                System.out.println("[clave] ❌ Error " + responseCode + " detectado. Rotando clave API.");
                                 response.close();
                                 RapidApiKeyManager.rotateApiKey();
 
-                                // Reintenta con la nueva clave
+                                // Nueva solicitud con la nueva clave API
                                 Request newRequest = original.newBuilder()
                                         .header("x-rapidapi-host", "imdb-com.p.rapidapi.com")
                                         .header("x-rapidapi-key", RapidApiKeyManager.getApiKey())
@@ -49,6 +53,21 @@ public class IMDBApiClient {
                                         .build();
 
                                 return chain.proceed(newRequest);
+                            }
+
+                            // 🔥 Si hay otro error (500 o 403), también rotar clave
+                            if (responseCode >= 500 || responseCode == 403) {
+                                System.out.println("[Clave] ❌ Error " + responseCode + ". Intentando con otra clave API.");
+                                response.close();
+                                RapidApiKeyManager.rotateApiKey();
+
+                                Request retryRequest = original.newBuilder()
+                                        .header("x-rapidapi-host", "imdb-com.p.rapidapi.com")
+                                        .header("x-rapidapi-key", RapidApiKeyManager.getApiKey())
+                                        .method(original.method(), original.body())
+                                        .build();
+
+                                return chain.proceed(retryRequest);
                             }
 
                             return response;
@@ -68,7 +87,13 @@ public class IMDBApiClient {
         return retrofit;
     }
 
-    public static IMDBApiService getService() {
-        return getClient().create(IMDBApiService.class);
+
+
+    public static void testApiKeyRotation() {
+        System.out.println("[TEST] 🔄 Probando rotación de claves API...");
+        for (int i = 0; i < 5; i++) { // Intentar cambiar de clave varias veces
+            RapidApiKeyManager.rotateApiKey();
+        }
     }
+
 }

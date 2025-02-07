@@ -1,16 +1,20 @@
 package edu.pmdm.chico_cristinaimdbapp;
 
+import static edu.pmdm.chico_cristinaimdbapp.IMDBApiClient.testApiKeyRotation;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ProcessLifecycleOwner;
@@ -50,6 +54,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         FirebaseApp.initializeApp(this);
 
+        testApiKeyRotation();
+
+
+
         //Ciclo de vida
         ProcessLifecycleOwner.get().getLifecycle().addObserver(new AppLifecycleObserver(this));
         Log.d("MainActivity", "Aplicación iniciada. Registrando login...");
@@ -69,7 +77,8 @@ public class MainActivity extends AppCompatActivity {
         String email = sharedPreferences.getString("email", emailFromIntent);
         String photoUrl = sharedPreferences.getString("photoUrl", null);
         String authMethod = sharedPreferences.getString("authMethod", null); // Obtener el método de autenticación
-        //String image = sharedPreferences.getString("image", imageFromIntent);
+        String phone = sharedPreferences.getString("phone", "");  //  Si es null, dejarlo vacío
+        String address = sharedPreferences.getString("userAddress", ""); //  Si es null, dejarlo vacío
 
         // Obtener la fecha y hora actuales
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
@@ -146,6 +155,8 @@ public class MainActivity extends AppCompatActivity {
             favoritesManager.listenForFavoriteChanges(userId);
             favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
 
+            syncUserData(userId);
+
             //  Actualizar UI
             updateNavigationDrawer(name, email, photoUrl,authMethod);
         } else {
@@ -163,6 +174,44 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    private void syncUserData(String userId) {
+        FirestoreHelper firestoreHelper = new FirestoreHelper();
+        firestoreHelper.fetchUserFromFirestore(userId, userData -> {
+            // Guardar datos en SQLite
+            FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
+            favoritesManager.addOrUpdateUser(
+                    userId,
+                    userData.getOrDefault("name", "Usuario").toString(),
+                    userData.getOrDefault("email", "Correo no disponible").toString(),
+                    null,
+                    null,
+                    userData.getOrDefault("address", "").toString(),
+                    userData.getOrDefault("phone", "").toString(),
+                    userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString()
+            );
+
+            // Guardar datos en SharedPreferences
+            SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("name", userData.getOrDefault("name", "Usuario").toString());
+            editor.putString("email", userData.getOrDefault("email", "Correo no disponible").toString());
+            editor.putString("userAddress", userData.getOrDefault("address", "").toString());
+            editor.putString("phone", userData.getOrDefault("phone", "").toString());
+            editor.putString("profileImagePath", userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString());
+            editor.apply();
+
+            // Actualizar el menú lateral
+            updateNavigationDrawer(
+                    userData.getOrDefault("name", "Usuario").toString(),
+                    userData.getOrDefault("email", "Correo no disponible").toString(),
+                    userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString(),
+                    sharedPreferences.getString("authMethod", null)
+            );
+
+        }, e -> Log.e("MainActivity", "Error al obtener datos desde Firestore", e));
+    }
+
 
 
     private void updateNavigationDrawer(String name, String email, String photoUrl, String authMethod) {
@@ -248,7 +297,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
 
+        if (id == R.id.nav_edit_user) { // Detecta la opción "Editar Usuario"
+            // Abre la actividad EditUserActivity
+            Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
+            startActivity(intent);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
 
     @Override

@@ -84,16 +84,18 @@ public class PantallaPrincipal extends AppCompatActivity {
             //SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
             //String authMethod = sharedPreferences.getString("authMethod", null);
 
-            //  Si el usuario ya está en la base de datos local, redirigir directamente
+            // Si el usuario ya está en la base de datos local, redirigir directamente
             if (favoritesManager.isUserExists(userId)) {
-                Log.d("Sesion", "✅ Usuario encontrado en la base local. Redirigiendo...");
+                Log.d("Sesion", " Usuario encontrado en la base local. Redirigiendo...");
 
-                //  Redirigir según el método de autenticación
+                // Redirigir según el método de autenticación
                 if ("email".equals(authMethod)) {
                     goToMainActivityWithEmail(userId, sharedPreferences.getString("name", "Usuario"),
-                            sharedPreferences.getString("email", null));
+                            sharedPreferences.getString("email", "Correo no disponible"));
+                } else if ("facebook".equals(authMethod)) {
+                    goToMainActivityFacebook();
                 } else {
-                    goToMainActivity();
+                    goToMainActivity(); // Por defecto, Google
                 }
                 return;
             }
@@ -108,10 +110,10 @@ public class PantallaPrincipal extends AppCompatActivity {
                 if (documentSnapshot.exists()) {
                     String name = documentSnapshot.getString("name");
                     String emailFromDB = documentSnapshot.getString("email");
-                    String photoUrl = documentSnapshot.getString("image"); // Se usa "image" porque así se guarda en Firestore
+                    String photoUrl = documentSnapshot.getString("image");
                     String authMethodFromDB = documentSnapshot.getString("authMethod"); //  Obtener método de autenticación
 
-                    // Validar valores predeterminados si faltan datos
+                    //  Validar valores predeterminados si faltan datos
                     if (name == null) name = "Usuario";
                     if (photoUrl == null || photoUrl.isEmpty()) {
                         photoUrl = "google".equals(authMethodFromDB)
@@ -119,7 +121,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                                 : "android.resource://" + getPackageName() + "/drawable/logoandroid";
                     }
 
-                    // Guardar en la base local
+                    //  Guardar en la base local
                     favoritesManager.addOrUpdateUser(userId, name, emailFromDB, null, null, null, null, photoUrl);
 
                     //  Guardar en SharedPreferences para futuras sesiones
@@ -134,14 +136,17 @@ public class PantallaPrincipal extends AppCompatActivity {
                     Log.d("Sesion", " Usuario sincronizado con éxito. Redirigiendo...");
                     if ("email".equals(authMethodFromDB)) {
                         goToMainActivityWithEmail(userId, name, emailFromDB);
+                    } else if ("facebook".equals(authMethodFromDB)) {
+                        goToMainActivityFacebook();
                     } else {
-                        goToMainActivity();
+                        goToMainActivity(); // Por defecto, Google
                     }
                 } else {
                     Log.e("Sesion", " Usuario autenticado pero no encontrado en Firestore.");
                 }
             }).addOnFailureListener(e -> Log.e("Firestore", " Error al obtener datos del usuario.", e));
         }
+
 
 
         // Configurar opciones de inicio de sesión con Google
@@ -594,52 +599,39 @@ public class PantallaPrincipal extends AppCompatActivity {
                 String name = account.getDisplayName();
                 String email = account.getEmail();
                 Uri photoUri = account.getPhotoUrl();
-                String photoUrl = (photoUri != null) ? photoUri.toString() : null;
+                String image = (photoUri != null) ? photoUri.toString() : "https://ui-avatars.com/api/?name=" + name.replace(" ", "%20");
 
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                DocumentReference userRef = db.collection("users").document(userId);
+                // 🔥 NUEVO: Inicializar phone y address con valores vacíos
+                String phone = "";
+                String address = "";
 
-                userRef.get().addOnSuccessListener(documentSnapshot -> {
-                    if (!documentSnapshot.exists()) {
-                        // Usuario NO registrado en Firestore, guardarlo
-                        Map<String, Object> userData = new HashMap<>();
-                        userData.put("userId", userId);
-                        userData.put("name", name);
-                        userData.put("email", email);
-                        userData.put("photoUrl", photoUrl);
+                Log.d("GoogleSignIn", "✅ Usuario autenticado con Google: " + email);
 
-                        userRef.set(userData)
-                                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario registrado en Firestore"))
-                                .addOnFailureListener(e -> Log.e("Firestore", "Error al registrar usuario", e));
-                    } else {
-                        Log.d("Firestore", "Usuario ya registrado en Firestore.");
-                    }
+                // 🔥 Guardar en SharedPreferences
+                SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("userId", userId);
+                editor.putString("name", name);
+                editor.putString("email", email);
+                editor.putString("profileImagePath", image);
+                editor.putString("phone", phone);
+                editor.putString("userAddress", address);
+                editor.putString("authMethod", "google");
+                editor.apply();
 
-                    // Guardar datos en SharedPreferences
-                    SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("userId", userId);
-                    editor.putString("name", name);
-                    editor.putString("email", email);
-                    editor.putString("photoUrl", photoUrl);
-                    editor.putString("authMethod", "google"); //  Registrar el método de autenticación
-                    editor.apply();
+                // 🔥 Guardar en SQLite para que no falten datos
+                FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
+                favoritesManager.addOrUpdateUser(userId, name, email, null, null, address, phone, image);
 
-                    // Sincronizar favoritos y usuario
-                    FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
-                    favoritesManager.syncFavorites(userId);
-                    favoritesManager.addOrUpdateUser(userId, name, email, null, null, null, null, photoUrl);
-
-
-                    // Redirigir a MainActivity
-                    goToMainActivity();
-                });
+                // 🔥 Redirigir a MainActivity
+                goToMainActivityWithEmail(userId, name, email);
             }
         } catch (ApiException e) {
-            Log.w("PantallaPrincipal", "Error en inicio de sesión: " + e.getStatusCode());
-            Toast.makeText(this, "Error al iniciar sesión", Toast.LENGTH_SHORT).show();
+            Log.e("GoogleSignIn", "❌ Error en inicio de sesión: " + e.getStatusCode());
+            Toast.makeText(this, "Error al iniciar sesión con Google", Toast.LENGTH_SHORT).show();
         }
     }
+
     private void goToMainActivity() {
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
         if (account != null) {

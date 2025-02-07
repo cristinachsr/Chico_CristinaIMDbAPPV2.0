@@ -151,5 +151,48 @@ public class FirestoreHelper {
         }).addOnFailureListener(e -> Log.e("FirestoreHelper", "Error al obtener el usuario.", e));
     }
 
+    public void fetchUserFromFirestore(String userId, Consumer<Map<String, String>> onSuccess, Consumer<Exception> onFailure) {
+        if (userId == null || userId.isEmpty()) {
+            Log.e("FirestoreHelper", " userId es nulo o vacío.");
+            return;
+        }
+
+        db.collection("users").document(userId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Map<String, String> userData = new HashMap<>();
+                        userData.put("name", documentSnapshot.getString("name"));
+                        userData.put("email", documentSnapshot.getString("email"));
+                        userData.put("phone", documentSnapshot.getString("phone"));
+                        userData.put("address", documentSnapshot.getString("address"));
+                        userData.put("image", documentSnapshot.getString("image"));
+
+                        if (onSuccess != null) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                onSuccess.accept(userData);
+                            }
+                        }
+
+                        Log.d("FirestoreHelper", " Datos de usuario obtenidos desde Firestore: " + userData);
+                    } else {
+                        Log.e("FirestoreHelper", " Usuario no encontrado en Firestore.");
+                        if (onFailure != null) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                onFailure.accept(new Exception("Usuario no encontrado en Firestore"));
+                            }
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreHelper", " Error al obtener datos de Firestore", e);
+                    if (onFailure != null) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            onFailure.accept(e);
+                        }
+                    }
+                });
+    }
+
+
 
 }

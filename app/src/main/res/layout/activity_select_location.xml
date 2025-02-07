@@ -1,0 +1,42 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Botón para abrir el buscador de direcciones de Google -->
+    <Button
+        android:id="@+id/btnSearchAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Buscar Dirección"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Campo de texto para mostrar la dirección seleccionada -->
+    <TextView
+        android:id="@+id/tvSelectedAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Dirección seleccionada aparecerá aquí"
+        android:padding="8dp"
+        android:background="#f0f0f0"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Contenedor para el mapa -->
+    <FrameLayout
+        android:id="@+id/mapContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/darker_gray" />
+
+    <!-- Botón para confirmar la dirección -->
+    <Button
+        android:id="@+id/btnConfirmAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Confirmar Dirección"
+        android:layout_marginTop="8dp" />
+</LinearLayout>

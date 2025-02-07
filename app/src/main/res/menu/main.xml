@@ -6,4 +6,11 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+
+    <!-- Nueva opción para Editar Usuario -->
+    <item
+        android:id="@+id/nav_edit_user"
+        android:title="Edit User"
+        android:orderInCategory="101"
+        app:showAsAction="never" />
 </menu>
