@@ -178,39 +178,33 @@ public class MainActivity extends AppCompatActivity {
     private void syncUserData(String userId) {
         FirestoreHelper firestoreHelper = new FirestoreHelper();
         firestoreHelper.fetchUserFromFirestore(userId, userData -> {
+            // Validar campos obtenidos de Firestore
+            String name = userData.containsKey("name") && userData.get("name") != null ? userData.get("name").toString() : "Usuario";
+            String email = userData.containsKey("email") && userData.get("email") != null ? userData.get("email").toString() : "Correo no disponible";
+            String address = userData.containsKey("address") && userData.get("address") != null ? userData.get("address").toString() : "";
+            String phone = userData.containsKey("phone") && userData.get("phone") != null ? userData.get("phone").toString() : "";
+            String image = userData.containsKey("image") && userData.get("image") != null ? userData.get("image").toString() : "android.resource://" + getPackageName() + "/drawable/logoandroid";
+
             // Guardar datos en SQLite
             FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
-            favoritesManager.addOrUpdateUser(
-                    userId,
-                    userData.getOrDefault("name", "Usuario").toString(),
-                    userData.getOrDefault("email", "Correo no disponible").toString(),
-                    null,
-                    null,
-                    userData.getOrDefault("address", "").toString(),
-                    userData.getOrDefault("phone", "").toString(),
-                    userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString()
-            );
+            favoritesManager.addOrUpdateUser(userId, name, email, null, null, address, phone, image);
 
             // Guardar datos en SharedPreferences
             SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("name", userData.getOrDefault("name", "Usuario").toString());
-            editor.putString("email", userData.getOrDefault("email", "Correo no disponible").toString());
-            editor.putString("userAddress", userData.getOrDefault("address", "").toString());
-            editor.putString("phone", userData.getOrDefault("phone", "").toString());
-            editor.putString("profileImagePath", userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString());
+            editor.putString("name", name);
+            editor.putString("email", email);
+            editor.putString("userAddress", address);
+            editor.putString("phone", phone);
+            editor.putString("profileImagePath", image);
             editor.apply();
 
             // Actualizar el menú lateral
-            updateNavigationDrawer(
-                    userData.getOrDefault("name", "Usuario").toString(),
-                    userData.getOrDefault("email", "Correo no disponible").toString(),
-                    userData.getOrDefault("image", "android.resource://" + getPackageName() + "/drawable/logoandroid").toString(),
-                    sharedPreferences.getString("authMethod", null)
-            );
+            updateNavigationDrawer(name, email, image, sharedPreferences.getString("authMethod", null));
 
         }, e -> Log.e("MainActivity", "Error al obtener datos desde Firestore", e));
     }
+
 
 
 

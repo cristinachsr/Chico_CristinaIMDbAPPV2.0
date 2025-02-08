@@ -6,8 +6,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Button;
@@ -33,8 +37,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -47,6 +53,7 @@ public class EditUserActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
     private static final int CAPTURE_IMAGE_REQUEST = 2;
     private static final int SELECT_LOCATION_REQUEST = 1;
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     private EditText editTextName, editTextPhone, editTextEmail;
     private ImageView imageViewProfile;
@@ -88,7 +95,27 @@ public class EditUserActivity extends AppCompatActivity {
 
         //recuperar datos de la base de datos
         loadUserData();
+        checkAndRequestCameraPermission();
 
+    }
+    private void checkAndRequestCameraPermission() {
+        List<String> permissionsToRequest = new ArrayList<>();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.CAMERA);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+        }
+
+        if (!permissionsToRequest.isEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toArray(new String[0]), CAMERA_PERMISSION_REQUEST_CODE);
+        }
     }
 
 
@@ -107,7 +134,7 @@ public class EditUserActivity extends AppCompatActivity {
     }
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAPTURE_IMAGE_REQUEST);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
             return;
         }
 
@@ -116,15 +143,26 @@ public class EditUserActivity extends AppCompatActivity {
             try {
                 File photoFile = createImageFile();
                 if (photoFile != null) {
-                    Uri photoURI = FileProvider.getUriForFile(this, "edu.pmdm.chico_cristinaimdbapp.fileprovider", photoFile);
+                    Uri photoURI = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
                     takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                     startActivityForResult(takePictureIntent, CAPTURE_IMAGE_REQUEST);
                 }
             } catch (IOException ex) {
                 Toast.makeText(this, "Error al crear archivo de imagen", Toast.LENGTH_SHORT).show();
             }
+        } else {
+            // Si no hay cámara, mostrar un selector de aplicaciones
+            Intent pickAppIntent = new Intent(Intent.ACTION_MAIN);
+            pickAppIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            Intent chooserIntent = Intent.createChooser(pickAppIntent, "Selecciona una aplicación de cámara");
+            startActivity(chooserIntent);
         }
     }
+
+
+
+
+
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -135,8 +173,19 @@ public class EditUserActivity extends AppCompatActivity {
     }
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+
+        // Verificar si hay una aplicación que maneje la acción
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, PICK_IMAGE_REQUEST);
+        } else {
+            // Si no hay una galería, usar el selector de archivos
+            Intent fileIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            fileIntent.setType("image/*");
+            startActivityForResult(fileIntent, PICK_IMAGE_REQUEST);
+        }
     }
+
     private void handleImageSelection(Uri imageUri) {
         if (imageUri != null) {
             // Si la imagen viene de la galería, conviértela a un archivo local
@@ -151,6 +200,7 @@ public class EditUserActivity extends AppCompatActivity {
             Toast.makeText(this, "Error al cargar la imagen", Toast.LENGTH_SHORT).show();
         }
     }
+
     private String saveGalleryImageToLocalFile(Uri imageUri) {
         try {
             // Crear un archivo temporal en el almacenamiento interno
@@ -213,10 +263,14 @@ public class EditUserActivity extends AppCompatActivity {
                 File file = new File(currentPhotoPath);
                 if (file.exists()) {
                     imageUri = Uri.fromFile(file);
+                    Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
+                    if (bitmap != null) {
+                        imageViewProfile.setImageBitmap(bitmap); // Mostrar la imagen inmediatamente
+                        saveImageToPreferences(currentPhotoPath);
+                    }
                 }
             }
 
-            // Guardar y mostrar la imagen seleccionada
             if (imageUri != null) {
                 handleImageSelection(imageUri);
             }
@@ -240,6 +294,20 @@ public class EditUserActivity extends AppCompatActivity {
             }
         }
     }
+
+    private Uri saveBitmapToInternalStorage(Bitmap bitmap) {
+        File directory = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        String fileName = "profile_" + System.currentTimeMillis() + ".jpg";
+        File imageFile = new File(directory, fileName);
+
+        try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+            return Uri.fromFile(imageFile);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
 
     private void loadUserData() {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -308,11 +376,6 @@ public class EditUserActivity extends AppCompatActivity {
 
         Glide.with(this).load(imagePath).circleCrop().into(imageViewProfile);
     }
-
-
-
-
-
 
     private void saveUserData() {
         String name = editTextName.getText().toString().trim();
@@ -383,12 +446,6 @@ public class EditUserActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> Log.d("Firestore", " Usuario actualizado en Firestore"))
                 .addOnFailureListener(e -> Log.e("Firestore", " Error al actualizar usuario en Firestore", e));
     }
-
-
-
-
-
-
 
     private boolean validateName(String name) {
         if (name.isEmpty() || name.length() > 20 || !name.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$")) {

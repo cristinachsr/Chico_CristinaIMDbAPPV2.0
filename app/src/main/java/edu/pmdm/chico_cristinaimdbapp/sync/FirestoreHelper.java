@@ -24,7 +24,7 @@ public class FirestoreHelper {
     private FirebaseFirestore db;
 
     public FirestoreHelper() {
-         db = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
 
     }
 

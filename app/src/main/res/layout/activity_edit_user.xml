@@ -77,7 +77,7 @@
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:layout_gravity="center"
-            android:scaleType="centerCrop"
+            android:scaleType="fitCenter"
             android:src="@drawable/logoandroid" />
 
         <!-- Botón para Guardar -->

@@ -65,4 +65,8 @@ dependencies {
     implementation("com.hbb20:ccp:2.5.2")
     implementation("com.google.android.gms:play-services-maps:18.1.0")
     implementation("com.google.android.gms:play-services-places:17.0.0")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+
 }
