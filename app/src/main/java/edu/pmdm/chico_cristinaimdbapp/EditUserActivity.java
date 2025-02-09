@@ -158,11 +158,6 @@ public class EditUserActivity extends AppCompatActivity {
             startActivity(chooserIntent);
         }
     }
-
-
-
-
-
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";

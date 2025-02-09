@@ -10,12 +10,15 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.pmdm.chico_cristinaimdbapp.KeystoreManager;
 import edu.pmdm.chico_cristinaimdbapp.movieIMDB.Movie;
 
 public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "favorites.db"; // Nombre de la base de datos
     private static final int DATABASE_VERSION = 3; // Versión de la base de datos para actualizaciones
+    private final Context context;
+    private final KeystoreManager keystoreManager;
 
     // Nombre de la tabla y columnas
     private static final String TABLE_FAVORITES = "favorites";
@@ -38,8 +41,14 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_PHONE = "phone";
     public static final String COLUMN_IMAGE = "image";
 
+
+
+
+
     public FavoritesDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        this.context = context;
+        this.keystoreManager = new KeystoreManager(context);
         // 🔹 Esto asegurará que la base de datos se cree y se mantenga abierta
         getWritableDatabase();
     }
@@ -182,42 +191,79 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    // Métodos para la tabla de usuarios
+    /// Método para agregar usuario con cifrado de dirección y teléfono
     public void addUser(String userId, String name, String email, String loginTime, String logoutTime, String address, String phone, String image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_USERS_USER_ID, userId); // Cambiado a COLUMN_USERS_USER_ID
-        values.put(COLUMN_NAME, name);
-        values.put(COLUMN_EMAIL, email);
-        values.put(COLUMN_LOGIN_TIME, loginTime);
-        values.put(COLUMN_LOGOUT_TIME, logoutTime);
-        values.put(COLUMN_ADDRESS, address);
-        values.put(COLUMN_PHONE, phone);
-        values.put(COLUMN_IMAGE, image);
 
-        db.insertWithOnConflict(TABLE_USERS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
-        db.close();
+        try {
+            // Cifrar dirección y teléfono
+            String encryptedAddress = address != null ? keystoreManager.encrypt(address) : null;
+            String encryptedPhone = phone != null ? keystoreManager.encrypt(phone) : null;
+
+            values.put(COLUMN_USERS_USER_ID, userId);
+            values.put(COLUMN_NAME, name);
+            values.put(COLUMN_EMAIL, email);
+            values.put(COLUMN_LOGIN_TIME, loginTime);
+            values.put(COLUMN_LOGOUT_TIME, logoutTime);
+            values.put(COLUMN_ADDRESS, encryptedAddress); // 🔒 Dirección cifrada
+            values.put(COLUMN_PHONE, encryptedPhone); // 🔒 Teléfono cifrado
+            values.put(COLUMN_IMAGE, image);
+
+            db.insertWithOnConflict(TABLE_USERS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+        } catch (Exception e) {
+            Log.e("FavoritesDBHelper", "Error al cifrar los datos en addUser: " + e.getMessage());
+        } finally {
+            db.close();
+        }
     }
 
+    // Método para actualizar usuario con cifrado de dirección y teléfono
     public void updateUser(String userId, String name, String email, String loginTime, String logoutTime, String address, String phone, String image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        if (name != null) values.put(COLUMN_NAME, name);
-        if (email != null) values.put(COLUMN_EMAIL, email);
-        if (loginTime != null) values.put(COLUMN_LOGIN_TIME, loginTime);
-        if (logoutTime != null) values.put(COLUMN_LOGOUT_TIME, logoutTime);
-        if (address != null) values.put(COLUMN_ADDRESS, address);
-        if (phone != null) values.put(COLUMN_PHONE, phone);
-        if (image != null) values.put(COLUMN_IMAGE, image);
 
-        db.update(TABLE_USERS, values, COLUMN_USERS_USER_ID + " = ?", new String[]{userId}); // Cambiado a COLUMN_USERS_USER_ID
-        db.close();
+        try {
+            if (name != null) values.put(COLUMN_NAME, name);
+            if (email != null) values.put(COLUMN_EMAIL, email);
+            if (loginTime != null) values.put(COLUMN_LOGIN_TIME, loginTime);
+            if (logoutTime != null) values.put(COLUMN_LOGOUT_TIME, logoutTime);
+            if (address != null) values.put(COLUMN_ADDRESS, keystoreManager.encrypt(address)); // 🔒 Cifrar dirección
+            if (phone != null) values.put(COLUMN_PHONE, keystoreManager.encrypt(phone)); // 🔒 Cifrar teléfono
+            if (image != null) values.put(COLUMN_IMAGE, image);
+
+            db.update(TABLE_USERS, values, COLUMN_USERS_USER_ID + " = ?", new String[]{userId});
+        } catch (Exception e) {
+            Log.e("FavoritesDBHelper", "Error al cifrar los datos en updateUser: " + e.getMessage());
+        } finally {
+            db.close();
+        }
     }
+
 
     public Cursor getUser(String userId) {
         SQLiteDatabase db = this.getReadableDatabase();
-        return db.query(TABLE_USERS, null, COLUMN_USERS_USER_ID + " = ?", new String[]{userId}, null, null, null); // Cambiado a COLUMN_USERS_USER_ID
+        Cursor cursor = db.query(TABLE_USERS, null, COLUMN_USERS_USER_ID + " = ?", new String[]{userId}, null, null, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            try {
+                String encryptedAddress = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ADDRESS));
+                String encryptedPhone = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE));
+
+                // Descifrar dirección y teléfono
+                String decryptedAddress = keystoreManager.decrypt(encryptedAddress);
+                String decryptedPhone = keystoreManager.decrypt(encryptedPhone);
+
+                Log.d("FavoritesDBHelper", "Dirección descifrada: " + decryptedAddress);
+                Log.d("FavoritesDBHelper", "Teléfono descifrado: " + decryptedPhone);
+            } catch (Exception e) {
+                Log.e("FavoritesDBHelper", "Error al descifrar los datos: " + e.getMessage());
+            }
+        }
+
+        return cursor;
     }
+
 
     public void deleteUser(String userId) {
         SQLiteDatabase db = this.getWritableDatabase();

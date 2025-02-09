@@ -16,12 +16,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.pmdm.chico_cristinaimdbapp.KeystoreManager;
 import edu.pmdm.chico_cristinaimdbapp.movieIMDB.Movie;
 import edu.pmdm.chico_cristinaimdbapp.sync.FirestoreHelper;
 
 public class FavoritesManager {
     private static FavoritesManager instance; // Instancia única
     private FavoritesDatabaseHelper dbHelper; // Referencia a la base de datos
+
+
 
     private FavoritesManager(Context context) {
         dbHelper = new FavoritesDatabaseHelper(context);
@@ -30,8 +33,6 @@ public class FavoritesManager {
         SQLiteDatabase db = dbHelper.getWritableDatabase(); //  Inicializar la variable db
         db.execSQL("PRAGMA foreign_keys = ON;"); //  Habilitar claves foráneas
     }
-
-
     public static synchronized FavoritesManager getInstance(Context context) {
         // Patrón Singleton: si no existe la instancia, la creamos
         if (instance == null) {
@@ -39,7 +40,6 @@ public class FavoritesManager {
         }
         return instance;
     }
-
     public boolean addFavorite(Movie movie, String userId) {
         // Verificamos si la película tiene un ID válido antes de guardarla
         if (movie.getId() == null || movie.getId().isEmpty()) {
@@ -73,7 +73,6 @@ public class FavoritesManager {
             return false; // Se agregó correctamente
         }
     }
-
     public void removeFavorite(Movie movie, String userId) {
         // Eliminar una película de favoritos
         dbHelper.removeFavorite(movie.getId(), userId);
@@ -83,7 +82,6 @@ public class FavoritesManager {
         firestoreHelper.removeFavorite(userId, movie.getId());
         Log.i("FavoritesManager", "Película eliminada de favoritos (Firestore): " + movie.getTitle());
     }
-
     public List<Movie> getFavoriteMovies(String userId) {
         // Obtener todas las películas favoritas del usuario
         return dbHelper.getAllFavorites(userId);
@@ -227,9 +225,6 @@ public class FavoritesManager {
         cursor.close();
         return exists;
     }
-
-
-
 
     // Obtener datos de un usuario
     @SuppressLint("Range")
