@@ -2,6 +2,7 @@ package edu.pmdm.chico_cristinaimdbapp;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -55,6 +56,8 @@ public class SelectLocationActivity extends AppCompatActivity implements OnMapRe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_select_location);
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         // Inicializar Google Places
         Places.initialize(getApplicationContext(), "AIzaSyAER7D-uvYpBOG3wZjz9z3AeGulqAci-OU");
         placesClient = Places.createClient(this);
@@ -86,6 +89,7 @@ public class SelectLocationActivity extends AppCompatActivity implements OnMapRe
         });
     }
 
+    //solicitar los permisos
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -107,6 +111,7 @@ public class SelectLocationActivity extends AppCompatActivity implements OnMapRe
         }
     }
 
+    //abre la interfaz de búsqueda de Google Places
     private void openPlaceSearch() {
         List<Place.Field> fields = Arrays.asList(
                 Place.Field.ID,        // ID del lugar

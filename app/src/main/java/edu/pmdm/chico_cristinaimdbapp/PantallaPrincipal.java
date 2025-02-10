@@ -80,10 +80,6 @@ public class PantallaPrincipal extends AppCompatActivity {
         String authMethod = sharedPreferences.getString("authMethod", null); //  Obtener el método de autenticación
 
         if (userId != null) {
-            // Obtener el método de autenticación desde SharedPreferences
-            //SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-            //String authMethod = sharedPreferences.getString("authMethod", null);
-
             // Si el usuario ya está en la base de datos local, redirigir directamente
             if (favoritesManager.isUserExists(userId)) {
                 Log.d("Sesion", " Usuario encontrado en la base local. Redirigiendo...");
@@ -203,7 +199,7 @@ public class PantallaPrincipal extends AppCompatActivity {
     }
 
 
-    //registro correo y contraseña
+    //verificar el correo
     private void checkEmailSignInMethod(String email, Runnable onEmailAvailable, Runnable onEmailUsedWithOtherMethod) {
         mAuth.fetchSignInMethodsForEmail(email)
                 .addOnCompleteListener(task -> {
@@ -226,6 +222,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
+    //registro correo y contraseña
     private void registerWithEmail(String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Por favor, completa todos los campos.", Toast.LENGTH_SHORT).show();
@@ -254,6 +251,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
+    //para compeltar el metodo de registro
     private void completeEmailRegistration(String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
@@ -286,6 +284,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
+    //metodo acceder si ya han sido registrado
     private void loginWithEmail(String email, String password) {
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Por favor, completa todos los campos.", Toast.LENGTH_SHORT).show();
@@ -333,7 +332,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                                         Toast.makeText(this, "Inicio de sesión exitoso.", Toast.LENGTH_SHORT).show();
                                         goToMainActivityWithEmail(userId, name, emailFromFirebase);
                                     } else {
-                                        Log.e("Firestore", "⚠ Usuario no encontrado en Firestore.");
+                                        Log.e("Firestore", " Usuario no encontrado en Firestore.");
                                         Toast.makeText(this, "Error: No se encontró el usuario en la base de datos.", Toast.LENGTH_SHORT).show();
                                     }
                                 });
@@ -352,6 +351,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
+    //metodo para comprobar errores
     private void handleAuthError(Exception exception) {
         if (exception != null) {
             String errorMessage = exception.getMessage();
@@ -376,6 +376,7 @@ public class PantallaPrincipal extends AppCompatActivity {
             }
         }
     }
+    //guardar datos usario en firestore
     private void saveUserToFirestore(String userId, String name, String email, String image) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> userData = new HashMap<>();
@@ -395,6 +396,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario registrado en Firestore"))
                 .addOnFailureListener(e -> Log.e("Firestore", "Error al registrar usuario en Firestore", e));
     }
+    //guardar datos usario en sharedpreferences
     private void saveUserToSharedPreferences(String userId, String name, String email, String image, String authMethod) {
         if (image == null || image.isEmpty()) {
             image = "android.resource://" + getPackageName() + "/drawable/logoandroid"; // Imagen predeterminada
@@ -408,6 +410,7 @@ public class PantallaPrincipal extends AppCompatActivity {
         editor.putString("authMethod", authMethod);
         editor.apply();
     }
+    //metodo ir mainactivity
     private void goToMainActivityWithEmail(String userId, String name, String email) {
         Log.d("Navigation", "Redirigiendo a MainActivity con: " + userId + ", " + name + ", " + email);
 
@@ -532,6 +535,7 @@ public class PantallaPrincipal extends AppCompatActivity {
                     }
                 });
     }
+    //metodo ir pantalla de mainactivity
     private void goToMainActivityFacebook() {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
@@ -601,13 +605,13 @@ public class PantallaPrincipal extends AppCompatActivity {
                 Uri photoUri = account.getPhotoUrl();
                 String image = (photoUri != null) ? photoUri.toString() : "https://ui-avatars.com/api/?name=" + name.replace(" ", "%20");
 
-                // 🔥 NUEVO: Inicializar phone y address con valores vacíos
+                // NUEVO: Inicializar phone y address con valores vacíos
                 String phone = "";
                 String address = "";
 
-                Log.d("GoogleSignIn", "✅ Usuario autenticado con Google: " + email);
+                Log.d("GoogleSignIn", " Usuario autenticado con Google: " + email);
 
-                // 🔥 Guardar en SharedPreferences
+                // Guardar en SharedPreferences
                 SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("userId", userId);
@@ -619,15 +623,15 @@ public class PantallaPrincipal extends AppCompatActivity {
                 editor.putString("authMethod", "google");
                 editor.apply();
 
-                // 🔥 Guardar en SQLite para que no falten datos
+                // Guardar en SQLite para que no falten datos
                 FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
                 favoritesManager.addOrUpdateUser(userId, name, email, null, null, address, phone, image);
 
-                // 🔥 Redirigir a MainActivity
+                // Redirigir a MainActivity
                 goToMainActivityWithEmail(userId, name, email);
             }
         } catch (ApiException e) {
-            Log.e("GoogleSignIn", "❌ Error en inicio de sesión: " + e.getStatusCode());
+            Log.e("GoogleSignIn", " Error en inicio de sesión: " + e.getStatusCode());
             Toast.makeText(this, "Error al iniciar sesión con Google", Toast.LENGTH_SHORT).show();
         }
     }

@@ -24,8 +24,7 @@ public class FavoritesManager {
     private static FavoritesManager instance; // Instancia única
     private FavoritesDatabaseHelper dbHelper; // Referencia a la base de datos
 
-
-
+    //inicializa la bade de datos y habilita lass claves foraneas
     private FavoritesManager(Context context) {
         dbHelper = new FavoritesDatabaseHelper(context);
 
@@ -33,6 +32,7 @@ public class FavoritesManager {
         SQLiteDatabase db = dbHelper.getWritableDatabase(); //  Inicializar la variable db
         db.execSQL("PRAGMA foreign_keys = ON;"); //  Habilitar claves foráneas
     }
+
     public static synchronized FavoritesManager getInstance(Context context) {
         // Patrón Singleton: si no existe la instancia, la creamos
         if (instance == null) {
@@ -40,21 +40,21 @@ public class FavoritesManager {
         }
         return instance;
     }
+
+    //agragar un pelicula a la lista de favoritos
     public boolean addFavorite(Movie movie, String userId) {
         // Verificamos si la película tiene un ID válido antes de guardarla
         if (movie.getId() == null || movie.getId().isEmpty()) {
-            Log.e("FavoritesManager", "El ID de la película es nulo o vacío. No se puede guardar.");
             return false;
         }
 
         // Comprobar si la película ya está en favoritos
         List<Movie> currentFavorites = dbHelper.getAllFavorites(userId);
         if (currentFavorites.contains(movie)) {
-            Log.i("FavoritesManager", "La película ya está en favoritos: " + movie.getTitle());
             return true; // Ya estaba guardada
         } else {
             dbHelper.addFavorite(movie, userId);
-            Log.i("FavoritesManager", "Película agregada a favoritos: " + movie.getTitle());
+
 
             // Guardar en Firestore
             FirestoreHelper firestoreHelper = new FirestoreHelper();
@@ -67,12 +67,11 @@ public class FavoritesManager {
                     movie.getPlot(),
                     movie.getRating()
             );
-            Log.i("FavoritesManager", "Película agregada a favoritos (Firestore): " + movie.getTitle());
-
-
             return false; // Se agregó correctamente
         }
     }
+
+    //elimina pelicula de la lista de favoritos del usuario
     public void removeFavorite(Movie movie, String userId) {
         // Eliminar una película de favoritos
         dbHelper.removeFavorite(movie.getId(), userId);
@@ -80,12 +79,15 @@ public class FavoritesManager {
         // Eliminar de Firestore
         FirestoreHelper firestoreHelper = new FirestoreHelper();
         firestoreHelper.removeFavorite(userId, movie.getId());
-        Log.i("FavoritesManager", "Película eliminada de favoritos (Firestore): " + movie.getTitle());
     }
+
+    //obtiene la lista de peliculas favoritas del usuario desde SQLite
     public List<Movie> getFavoriteMovies(String userId) {
         // Obtener todas las películas favoritas del usuario
         return dbHelper.getAllFavorites(userId);
     }
+
+    //sicronizar la lista de favoritos de SQLite y de Firestore
     public void syncFavorites(String userId) {
         FirestoreHelper firestoreHelper = new FirestoreHelper();
 
@@ -104,9 +106,8 @@ public class FavoritesManager {
                         // Guardar en SQLite
                         dbHelper.addFavorite(movie, userId);
                     }
-                    Log.i("FavoritesManager", "📥 Sincronización completada (Firestore → SQLite)");
 
-                    // 🔼 2️⃣ Subir los favoritos locales a Firestore si no están en la nube
+                    // Subir los favoritos locales a Firestore si no están en la nube
                     List<Movie> localFavorites = dbHelper.getAllFavorites(userId);
                     for (Movie movie : localFavorites) {
                         boolean existsInCloud = favorites.stream().anyMatch(m -> m.get("movieId").equals(movie.getId()));
@@ -121,13 +122,14 @@ public class FavoritesManager {
                                     movie.getPlot(),
                                     movie.getRating()
                             );
-                            Log.i("FavoritesManager", "📤 Subida a Firestore: " + movie.getTitle());
                         }
                     }
                 },
                 e -> Log.e("FavoritesManager", "Error al sincronizar favoritos: ", e)
         );
     }
+
+    //escuchar los cambios en tiempo real en la lista de favoritos
     public void listenForFavoriteChanges(String userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("users").document(userId).collection("favorites")
@@ -138,7 +140,6 @@ public class FavoritesManager {
                     }
 
                     if (snapshots != null) {
-                        Log.d("FirestoreListener", "Detectados cambios en favoritos. Sincronizando...");
                         // Limpiar y actualizar la base de datos local
                         dbHelper.clearFavorites(userId);
                         for (DocumentSnapshot doc : snapshots.getDocuments()) {
@@ -158,6 +159,7 @@ public class FavoritesManager {
 
     private static final String DEFAULT_IMAGE = "android.resource://edu.pmdm.chico_cristinaimdbapp/drawable/logoandroid";
 
+    //agragar o actualizar la informacion del usuario
     @SuppressLint("Range")
     public void addOrUpdateUser(String userId, String name, String email, String loginTime, String logoutTime, String address, String phone, String image) {
         Cursor cursor = dbHelper.getUser(userId);
@@ -172,7 +174,7 @@ public class FavoritesManager {
                     phone != null ? phone : cursor.getString(cursor.getColumnIndex("phone")),
                     image != null ? image : DEFAULT_IMAGE); // Imagen por defecto
 
-            Log.d("FavoritesManager", " Usuario actualizado en SQLite: " + userId);
+
         } else {
             dbHelper.addUser(userId,
                     name != null ? name : "Usuario",
@@ -183,7 +185,6 @@ public class FavoritesManager {
                     phone != null ? phone : "Sin Teléfono",
                     image != null ? image : DEFAULT_IMAGE); // Imagen por defecto
 
-            Log.d("FavoritesManager", " Usuario insertado en SQLite: " + userId);
         }
 
         if (cursor != null) {
@@ -191,9 +192,7 @@ public class FavoritesManager {
         }
     }
 
-
-
-
+    //obtener la informacion del usuario
     @SuppressLint("Range")
     public Map<String, String> getUserDetails(String userId) {
         Cursor cursor = dbHelper.getUser(userId);
@@ -217,6 +216,7 @@ public class FavoritesManager {
         return userData;
     }
 
+    //verificar si el usuario existe
     public boolean isUserExists(String userId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT user_id FROM users WHERE user_id = ?", new String[]{userId});
@@ -247,15 +247,6 @@ public class FavoritesManager {
 
         return userData;
     }
-
-    // Eliminar un usuario
-    public void deleteUser(String userId) {
-        dbHelper.deleteUser(userId);
-    }
-
-
-
-
 
 
 }

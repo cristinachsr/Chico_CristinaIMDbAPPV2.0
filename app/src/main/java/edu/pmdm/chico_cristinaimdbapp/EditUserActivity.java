@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -67,6 +68,8 @@ public class EditUserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_user);
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         // Vincular vistas
         editTextName = findViewById(R.id.editTextName);
         editTextPhone = findViewById(R.id.editTextPhone);
@@ -98,6 +101,7 @@ public class EditUserActivity extends AppCompatActivity {
         checkAndRequestCameraPermission();
 
     }
+    //Verifica y solicita permisos de cámara y almacenamiento.
     private void checkAndRequestCameraPermission() {
         List<String> permissionsToRequest = new ArrayList<>();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -119,6 +123,7 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
 
+    //Muestra un diálogo para seleccionar entre tomar una foto o elegir de la galería.
     private void showImagePickerDialog() {
         String[] options = {"Tomar foto", "Elegir de la galería"};
         new AlertDialog.Builder(this)
@@ -132,6 +137,7 @@ public class EditUserActivity extends AppCompatActivity {
                 })
                 .show();
     }
+    //Abre la cámara para tomar una foto.
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
@@ -158,6 +164,7 @@ public class EditUserActivity extends AppCompatActivity {
             startActivity(chooserIntent);
         }
     }
+    //Crea un archivo temporal para almacenar la imagen capturada por la cámara.
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -166,6 +173,7 @@ public class EditUserActivity extends AppCompatActivity {
         currentPhotoPath = image.getAbsolutePath();
         return image;
     }
+    //Abre la galería de imágenes para seleccionar una foto.
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
@@ -181,6 +189,7 @@ public class EditUserActivity extends AppCompatActivity {
         }
     }
 
+    //procesar la imagen seleccionada
     private void handleImageSelection(Uri imageUri) {
         if (imageUri != null) {
             // Si la imagen viene de la galería, conviértela a un archivo local
@@ -196,6 +205,7 @@ public class EditUserActivity extends AppCompatActivity {
         }
     }
 
+    //coger la imagen seleccionada y guardarla como un archivo local
     private String saveGalleryImageToLocalFile(Uri imageUri) {
         try {
             // Crear un archivo temporal en el almacenamiento interno
@@ -229,6 +239,7 @@ public class EditUserActivity extends AppCompatActivity {
             return null;
         }
     }
+    //Guardar la imagen en preferencias
     private void saveImageToPreferences(String imagePath) {
         if (imagePath != null && !imagePath.isEmpty()) {
             SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -290,26 +301,13 @@ public class EditUserActivity extends AppCompatActivity {
         }
     }
 
-    private Uri saveBitmapToInternalStorage(Bitmap bitmap) {
-        File directory = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        String fileName = "profile_" + System.currentTimeMillis() + ".jpg";
-        File imageFile = new File(directory, fileName);
 
-        try (FileOutputStream fos = new FileOutputStream(imageFile)) {
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-            return Uri.fromFile(imageFile);
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-
+    //cargar la informacion del usuario y mostrarla
     private void loadUserData() {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
 
         if (userId == null) {
-            Log.e("EditUserActivity", " No se encontró userId en SharedPreferences.");
             Toast.makeText(this, "Error: No se encontró información del usuario.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -340,38 +338,15 @@ public class EditUserActivity extends AppCompatActivity {
                             Glide.with(this).load("android.resource://" + getPackageName() + "/drawable/logoandroid").circleCrop().into(imageViewProfile);
                         }
                     } else {
-                        Log.e("Firestore", " Usuario no encontrado en Firestore.");
                         Toast.makeText(this, "No se encontraron datos del usuario en la nube.", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("Firestore", " Error al obtener datos del usuario desde Firestore", e);
                     Toast.makeText(this, "Error al cargar datos del usuario.", Toast.LENGTH_SHORT).show();
                 });
     }
 
-
-    private void updateUI(Map<String, String> userData) {
-        if (userData == null || userData.isEmpty()) {
-            Log.e("EditUserActivity", " No hay datos para actualizar.");
-            return;
-        }
-
-        editTextName.setText(userData.get("name") != null ? userData.get("name") : "");
-        editTextEmail.setText(userData.get("email") != null ? userData.get("email") : "");
-        editTextEmail.setEnabled(false); //  No permitir modificar el correo
-        editTextPhone.setText(userData.get("phone") != null ? userData.get("phone") : "");
-        textViewAddress.setText(userData.get("address") != null ? userData.get("address") : "");
-
-        // Manejo seguro de la imagen
-        String imagePath = userData.get("image");
-        if (imagePath == null || imagePath.isEmpty()) {
-            imagePath = "android.resource://" + getPackageName() + "/drawable/logoandroid";
-        }
-
-        Glide.with(this).load(imagePath).circleCrop().into(imageViewProfile);
-    }
-
+    // Guarda los datos del usuario en SQLite, Firestore y SharedPreferences.
     private void saveUserData() {
         String name = editTextName.getText().toString().trim();
         String phone = editTextPhone.getText().toString().trim();
@@ -425,7 +400,7 @@ public class EditUserActivity extends AppCompatActivity {
         finish();
     }
 
-
+    //guardar los datos del usuario en Firestore
     private void saveUserToFirestore(String userId, String name, String email, String phone, String address, String imagePath) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> userData = new HashMap<>();

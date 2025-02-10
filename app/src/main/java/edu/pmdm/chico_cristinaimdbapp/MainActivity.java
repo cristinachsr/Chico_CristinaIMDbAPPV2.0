@@ -54,9 +54,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         FirebaseApp.initializeApp(this);
 
+        //metodo rotar api
         testApiKeyRotation();
-
-
 
         //Ciclo de vida
         ProcessLifecycleOwner.get().getLifecycle().addObserver(new AppLifecycleObserver(this));
@@ -95,8 +94,6 @@ public class MainActivity extends AppCompatActivity {
             Log.w("MainActivity", "No se encontró un userId en SharedPreferences. No se registró el login.");
         }
 
-
-
         // Configuración de la vista principal con ViewBinding
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -108,8 +105,6 @@ public class MainActivity extends AppCompatActivity {
         // Configuración del Navigation Drawer
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
-
-
 
         // Configuración de la barra de navegación con las secciones del menú
         mAppBarConfiguration = new AppBarConfiguration.Builder(
@@ -128,9 +123,6 @@ public class MainActivity extends AppCompatActivity {
         TextView userName = headerView.findViewById(R.id.TextNombre);
         TextView userEmail = headerView.findViewById(R.id.TextCorreo);
         Button logoutButton = headerView.findViewById(R.id.button);
-
-        // Inicializar Firebase y SharedPreferences
-        //FirebaseFirestore db = FirebaseFirestore.getInstance();
 
 
         //  Si hay userId en SharedPreferences, usarlo en vez de FirebaseAuth
@@ -175,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //sincronizar los datos de los usuarios
     private void syncUserData(String userId) {
         FirestoreHelper firestoreHelper = new FirestoreHelper();
         firestoreHelper.fetchUserFromFirestore(userId, userData -> {
@@ -206,8 +199,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-
+    //actualizar el menu lateral
     private void updateNavigationDrawer(String name, String email, String photoUrl, String authMethod) {
         NavigationView navigationView = binding.navView;
         View headerView = navigationView.getHeaderView(0);
@@ -237,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
                 .fitCenter()
                 .into(imageView);
     }
+    //metodo cerrar sesion
     private void signOut() {
         Log.d("MainActivity", " Usuario cerrando sesión manualmente. Registrando logout...");
 
@@ -291,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //maneja la selecion de opciones en el menu
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -306,12 +300,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //crea el menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
+    //gestiona la navegacion
     @Override
     public boolean onSupportNavigateUp() {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
@@ -320,19 +316,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //metodo para el ciclo de vida
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d("MainActivity", "⚠ Aplicación cerrada completamente. Registrando logout...");
-
+        // Obtiene la hora actual en formato legible
         String currentTime = java.text.DateFormat.getDateTimeInstance().format(new java.util.Date());
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        String userId = sharedPreferences.getString("userId", null);
 
-        if (userId != null) {
+        // Obtiene las preferencias compartidas para acceder al ID del usuario
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", null); // Recupera el ID del usuario si está almacenado
+
+        if (userId != null) { // Verifica si hay un usuario autenticado
             FirestoreHelper firestoreHelper = new FirestoreHelper();
-            firestoreHelper.addActivityLog(userId, null, currentTime); // Registrar logout en Firestore
+            firestoreHelper.addActivityLog(userId, null, currentTime); // Registra el cierre de sesión en Firestore
+
+            // Guarda en `SharedPreferences` que el usuario ha cerrado sesión
             sharedPreferences.edit().putBoolean("wasLoggedOut", true).apply();
+
             Log.d("MainActivity", "✅ Logout registrado en Firestore al cerrar la app.");
         }
     }

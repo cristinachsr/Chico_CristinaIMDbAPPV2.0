@@ -16,6 +16,7 @@ public class IMDBApiClient {
 
     private static Retrofit retrofit = null;
 
+    //metodo para obtener la instancia de retrofit
     public static Retrofit getClient() {
         if (retrofit == null) {
             OkHttpClient client = new OkHttpClient.Builder()
@@ -35,13 +36,13 @@ public class IMDBApiClient {
 
                             Response response = chain.proceed(request);
 
-                            // 🔥 Verificar el código de respuesta
+                            // Verificar el código de respuesta
                             int responseCode = response.code();
                             System.out.println("[clave] Código de respuesta: " + responseCode);
 
-                            // 🔥 Si hay un error 401 o 429, rotar clave API y reintentar
+                            // Si hay un error 401 o 429, rotar clave API y reintentar
                             if (responseCode == 401 || responseCode == 429) {
-                                System.out.println("[clave] ❌ Error " + responseCode + " detectado. Rotando clave API.");
+                                System.out.println("[clave]  Error " + responseCode + " detectado. Rotando clave API.");
                                 response.close();
                                 RapidApiKeyManager.rotateApiKey();
 
@@ -55,9 +56,9 @@ public class IMDBApiClient {
                                 return chain.proceed(newRequest);
                             }
 
-                            // 🔥 Si hay otro error (500 o 403), también rotar clave
+                            //  Si hay otro error (500 o 403), también rotar clave
                             if (responseCode >= 500 || responseCode == 403) {
-                                System.out.println("[Clave] ❌ Error " + responseCode + ". Intentando con otra clave API.");
+                                System.out.println("[Clave] Error " + responseCode + ". Intentando con otra clave API.");
                                 response.close();
                                 RapidApiKeyManager.rotateApiKey();
 
@@ -87,10 +88,9 @@ public class IMDBApiClient {
         return retrofit;
     }
 
-
-
+    //Método de prueba para verificar la rotación de claves API.
     public static void testApiKeyRotation() {
-        System.out.println("[TEST] 🔄 Probando rotación de claves API...");
+        System.out.println("[TEST] Probando rotación de claves API...");
         for (int i = 0; i < 5; i++) { // Intentar cambiar de clave varias veces
             RapidApiKeyManager.rotateApiKey();
         }

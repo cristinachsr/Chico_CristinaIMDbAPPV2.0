@@ -15,15 +15,15 @@ public class AppLifecycleObserver implements LifecycleObserver {
     private final Context context;
     private final FavoritesManager favoritesManager;
 
+    //contructor
     public AppLifecycleObserver(Context context) {
         this.context = context;
         this.favoritesManager = FavoritesManager.getInstance(context);
     }
 
+    //metodo que se ejecuta cuando la aplicacion esta en primer plano
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     public void onAppForegrounded() {
-        Log.d("AppLifecycle", " Aplicación abierta. Registrando login...");
-
         SharedPreferences sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
         if (userId != null) {
@@ -38,10 +38,9 @@ public class AppLifecycleObserver implements LifecycleObserver {
         }
     }
 
+    //metodo que se ejecuta cuando la aplicacion pasa a segunco plano
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     public void onAppBackgrounded() {
-        Log.d("AppLifecycle", " Aplicación en segundo plano. Registrando logout...");
-
         SharedPreferences sharedPreferences = context.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
         if (userId != null) {
@@ -55,9 +54,5 @@ public class AppLifecycleObserver implements LifecycleObserver {
             firestoreHelper.addActivityLog(userId, null, currentTime);
         }
     }
-
-
-
-
 
 }

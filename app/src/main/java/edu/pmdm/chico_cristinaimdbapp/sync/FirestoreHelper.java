@@ -19,35 +19,35 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class FirestoreHelper {
-    private static final String COLLECTION_USERS = "users";
-    private static final String COLLECTION_FAVORITES = "favorites";
-    private FirebaseFirestore db;
+    private static final String COLLECTION_USERS = "users"; // Nombre de la colección de usuarios en Firestore
+    private static final String COLLECTION_FAVORITES = "favorites"; // Subcolección de favoritos dentro de cada usuario
+    private FirebaseFirestore db; // Instancia de Firestore para gestionar las operaciones
 
+    //constructor
     public FirestoreHelper() {
         db = FirebaseFirestore.getInstance();
 
     }
 
+
+    //agregar pelicula a la lista de favoritos
     public void addFavorite(String userId, String movieId, String title, String imageUrl, String releaseDate, String plot, double rating) {
         CollectionReference favoritesRef = db.collection("users").document(userId).collection("favorites");
 
-        Map<String, Object> movie = new HashMap<>();
-        movie.put("movieId", movieId);
-        movie.put("title", title);
-        movie.put("imageUrl", imageUrl);
-        movie.put("releaseDate", releaseDate);
-        movie.put("plot", plot);
-        movie.put("rating", rating);
+        Map<String, Object> movie = new HashMap<>(); // Crea un mapa para almacenar los datos de la película
+        movie.put("movieId", movieId); // ID de la película
+        movie.put("title", title); // Título de la película
+        movie.put("imageUrl", imageUrl); // URL de la imagen de la película
+        movie.put("releaseDate", releaseDate); // Fecha de lanzamiento
+        movie.put("plot", plot); // Sinopsis de la película
+        movie.put("rating", rating); // Calificación
 
-        favoritesRef.document(movieId).set(movie)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d("FirestoreHelper", "Película añadida a favoritos: " + title);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("FirestoreHelper", "Error al añadir película a favoritos", e);
-                });
+        favoritesRef.document(movieId).set(movie) // Guarda la película en Firestore
+                .addOnSuccessListener(aVoid -> Log.d("FirestoreHelper", "Película añadida a favoritos: " + title)) // Log de éxito
+                .addOnFailureListener(e -> Log.e("FirestoreHelper", "Error al añadir película a favoritos", e)); // Log de error
     }
 
+    //obtiene la lista de peliculas favoritas de un usuario desde firestore
     public void getFavorites(String userId, Consumer<List<Map<String, Object>>> onSuccess, Consumer<Exception> onFailure) {
         if (userId == null || userId.isEmpty()) {
             Log.e("FirestoreHelper", "El userId proporcionado es nulo o está vacío");
@@ -96,6 +96,7 @@ public class FirestoreHelper {
 
 
 
+    //elimina una pelicula de la lista de favoritas
     public void removeFavorite(String userId, String movieId) {
         CollectionReference favoritesRef = db.collection(COLLECTION_USERS).document(userId).collection(COLLECTION_FAVORITES);
 
@@ -109,6 +110,7 @@ public class FirestoreHelper {
     }
 
 
+    //Registra la actividad del usuario (login/logout) en Firestore.
     public void addActivityLog(String userId, String loginTime, String logoutTime) {
         DocumentReference userRef = db.collection("users").document(userId);
 
@@ -151,6 +153,7 @@ public class FirestoreHelper {
         }).addOnFailureListener(e -> Log.e("FirestoreHelper", "Error al obtener el usuario.", e));
     }
 
+    //Obtiene los datos del usuario desde Firestore.
     public void fetchUserFromFirestore(String userId, Consumer<Map<String, String>> onSuccess, Consumer<Exception> onFailure) {
         if (userId == null || userId.isEmpty()) {
             Log.e("FirestoreHelper", " userId es nulo o vacío.");
@@ -192,7 +195,4 @@ public class FirestoreHelper {
                     }
                 });
     }
-
-
-
 }

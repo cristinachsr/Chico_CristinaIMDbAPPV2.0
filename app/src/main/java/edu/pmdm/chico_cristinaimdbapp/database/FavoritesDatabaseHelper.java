@@ -43,8 +43,6 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
 
 
 
-
-
     public FavoritesDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         this.context = context;
@@ -103,6 +101,7 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    //agrega la pelicula a la lista de favoritos
     public void addFavorite(Movie movie, String userId) {
         // Verificar si la película ya está en favoritos para evitar duplicados
         if (movieExists(movie.getId(), userId)) {
@@ -130,6 +129,8 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
         //db.close();
     }
 
+
+    //verifica si una pelicula ya esta enla base de datos de ese usuario.
     private boolean movieExists(String movieId, String userId) {
         // Comprobar si una película ya está en la base de datos para ese usuario
         SQLiteDatabase db = this.getReadableDatabase();
@@ -146,6 +147,7 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
         return exists;
     }
 
+    //elimina una pelicula
     public void removeFavorite(String movieId, String userId) {
         // Eliminar una película de la lista de favoritos
         SQLiteDatabase db = this.getWritableDatabase();
@@ -155,6 +157,7 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    //obtener las peliculas favoritas del usuario
     public List<Movie> getAllFavorites(String userId) {
         // Obtener la lista de películas favoritas de un usuario
         List<Movie> favoriteMovies = new ArrayList<>();
@@ -181,12 +184,12 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
         return favoriteMovies;
     }
 
+    //borra las peliculas favoritas de un usuario
     public void clearFavorites(String userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         String whereClause = COLUMN_USER_ID + " = ?";
         String[] whereArgs = {userId};
         db.delete(TABLE_FAVORITES, whereClause, whereArgs);
-        Log.d("FavoritesDatabaseHelper", "Favoritos limpiados para el usuario: " + userId);
         db.close();
     }
 
@@ -241,6 +244,7 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
     }
 
 
+    //metodo para recuperar la informacion del usuario
     public Cursor getUser(String userId) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.query(TABLE_USERS, null, COLUMN_USERS_USER_ID + " = ?", new String[]{userId}, null, null, null);
@@ -253,9 +257,6 @@ public class FavoritesDatabaseHelper extends SQLiteOpenHelper {
                 // Descifrar dirección y teléfono
                 String decryptedAddress = keystoreManager.decrypt(encryptedAddress);
                 String decryptedPhone = keystoreManager.decrypt(encryptedPhone);
-
-                Log.d("FavoritesDBHelper", "Dirección descifrada: " + decryptedAddress);
-                Log.d("FavoritesDBHelper", "Teléfono descifrado: " + decryptedPhone);
             } catch (Exception e) {
                 Log.e("FavoritesDBHelper", "Error al descifrar los datos: " + e.getMessage());
             }
