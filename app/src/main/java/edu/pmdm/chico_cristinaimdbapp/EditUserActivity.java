@@ -396,7 +396,9 @@ public class EditUserActivity extends AppCompatActivity {
         saveUserToFirestore(userId, name, email, phone, address, imagePath);
 
         Toast.makeText(this, "Datos guardados correctamente", Toast.LENGTH_SHORT).show();
-        startActivity(new Intent(EditUserActivity.this, MainActivity.class));
+        Intent intent = new Intent(EditUserActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
         finish();
     }
 
@@ -412,7 +414,7 @@ public class EditUserActivity extends AppCompatActivity {
         userData.put("image", imagePath != null ? imagePath : "android.resource://" + getPackageName() + "/drawable/logoandroid");
 
         db.collection("users").document(userId)
-                .set(userData)
+                .update(userData)  // Solo actualiza los datos sin borrar `activity_log`
                 .addOnSuccessListener(aVoid -> Log.d("Firestore", " Usuario actualizado en Firestore"))
                 .addOnFailureListener(e -> Log.e("Firestore", " Error al actualizar usuario en Firestore", e));
     }

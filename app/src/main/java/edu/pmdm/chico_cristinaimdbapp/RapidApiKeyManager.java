@@ -19,13 +19,11 @@ public class RapidApiKeyManager {
 
     // Devuelve la clave actual
     public static String getApiKey() {
-        System.out.println("[claver] 🔑 Clave actual: " + apiKeys.get(currentKeyIndex));
         return apiKeys.get(currentKeyIndex);
     }
 
     // Rota a la siguiente clave en la lista
     public static void rotateApiKey() {
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.size();
-        System.out.println("[clave] 🔄 Cambiando a nueva clave API: " + getApiKey());
     }
 }

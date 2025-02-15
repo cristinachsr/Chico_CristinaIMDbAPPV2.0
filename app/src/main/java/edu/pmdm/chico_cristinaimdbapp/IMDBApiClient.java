@@ -1,5 +1,9 @@
 package edu.pmdm.chico_cristinaimdbapp;
 
+import static android.content.ContentValues.TAG;
+
+import android.util.Log;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +28,10 @@ public class IMDBApiClient {
                         @Override
                         public Response intercept(Chain chain) throws IOException {
                             Request original = chain.request();
+                            String apiKey = RapidApiKeyManager.getApiKey(); // Obtener clave actual
+
+                            // Log solo cuando se usa realmente la clave
+                            Log.i(TAG, "Usando clave API para solicitud: " + apiKey);
 
                             // Primera solicitud con la clave actual
                             Request request = original.newBuilder()
@@ -32,17 +40,15 @@ public class IMDBApiClient {
                                     .method(original.method(), original.body())
                                     .build();
 
-                            System.out.println("[IMDBApiClient] Enviando solicitud a API con clave: " + RapidApiKeyManager.getApiKey());
 
                             Response response = chain.proceed(request);
 
                             // Verificar el código de respuesta
                             int responseCode = response.code();
-                            System.out.println("[clave] Código de respuesta: " + responseCode);
+
 
                             // Si hay un error 401 o 429, rotar clave API y reintentar
                             if (responseCode == 401 || responseCode == 429) {
-                                System.out.println("[clave]  Error " + responseCode + " detectado. Rotando clave API.");
                                 response.close();
                                 RapidApiKeyManager.rotateApiKey();
 
@@ -58,7 +64,6 @@ public class IMDBApiClient {
 
                             //  Si hay otro error (500 o 403), también rotar clave
                             if (responseCode >= 500 || responseCode == 403) {
-                                System.out.println("[Clave] Error " + responseCode + ". Intentando con otra clave API.");
                                 response.close();
                                 RapidApiKeyManager.rotateApiKey();
 
@@ -90,7 +95,6 @@ public class IMDBApiClient {
 
     //Método de prueba para verificar la rotación de claves API.
     public static void testApiKeyRotation() {
-        System.out.println("[TEST] Probando rotación de claves API...");
         for (int i = 0; i < 5; i++) { // Intentar cambiar de clave varias veces
             RapidApiKeyManager.rotateApiKey();
         }

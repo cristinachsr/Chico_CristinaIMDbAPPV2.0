@@ -605,36 +605,69 @@ public class PantallaPrincipal extends AppCompatActivity {
                 Uri photoUri = account.getPhotoUrl();
                 String image = (photoUri != null) ? photoUri.toString() : "https://ui-avatars.com/api/?name=" + name.replace(" ", "%20");
 
-                // NUEVO: Inicializar phone y address con valores vacíos
+                // Inicializar phone y address con valores vacíos
                 String phone = "";
                 String address = "";
 
-                Log.d("GoogleSignIn", " Usuario autenticado con Google: " + email);
+                Log.d("GoogleSignIn", "Usuario autenticado con Google: " + email);
 
-                // Guardar en SharedPreferences
-                SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("userId", userId);
-                editor.putString("name", name);
-                editor.putString("email", email);
-                editor.putString("profileImagePath", image);
-                editor.putString("phone", phone);
-                editor.putString("userAddress", address);
-                editor.putString("authMethod", "google");
-                editor.apply();
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                DocumentReference userRef = db.collection("users").document(userId);
 
-                // Guardar en SQLite para que no falten datos
-                FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
-                favoritesManager.addOrUpdateUser(userId, name, email, null, null, address, phone, image);
+                userRef.get().addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        // **Usuario NO registrado en Firestore, guardarlo**
+                        Map<String, Object> userData = new HashMap<>();
+                        userData.put("userId", userId);
+                        userData.put("name", name);
+                        userData.put("email", email);
+                        userData.put("image", image);
+                        userData.put("authMethod", "google");
+                        userData.put("phone", phone);
+                        userData.put("address", address);
 
-                // Redirigir a MainActivity
-                goToMainActivityWithEmail(userId, name, email);
+
+                        userRef.set(userData)
+                                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario registrado en Firestore con Google"))
+                                .addOnFailureListener(e -> Log.e("Firestore", "Error al registrar usuario en Firestore con Google", e));
+                    } else {
+                        Log.d("Firestore", "Usuario ya registrado en Firestore, actualizando actividad...");
+                    }
+
+
+                    // Guardar datos en SharedPreferences
+                    SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("userId", userId);
+                    editor.putString("name", name);
+                    editor.putString("email", email);
+                    editor.putString("image", image);
+                    editor.putString("phone", phone);
+                    editor.putString("userAddress", address);
+                    editor.putString("authMethod", "google");
+                    editor.apply();
+
+                    // **Guardar en SQLite**
+                    FavoritesManager favoritesManager = FavoritesManager.getInstance(this);
+                    favoritesManager.addOrUpdateUser(userId, name, email, null, null, address, phone, image);
+
+                    // **Sincronizar favoritos**
+                    favoritesManager.syncFavorites(userId);
+
+                    // **Escuchar cambios en tiempo real**
+                    favoritesManager.listenForFavoriteChanges(userId);
+
+                    // Redirigir a MainActivity
+                    goToMainActivityWithEmail(userId, name, email);
+                });
+
             }
         } catch (ApiException e) {
-            Log.e("GoogleSignIn", " Error en inicio de sesión: " + e.getStatusCode());
+            Log.e("GoogleSignIn", "Error en inicio de sesión: " + e.getStatusCode());
             Toast.makeText(this, "Error al iniciar sesión con Google", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     private void goToMainActivity() {
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
